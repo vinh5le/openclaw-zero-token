@@ -1,7 +1,7 @@
 /**
- * Manus 官方 API 客户端
- * 文档: https://open.manus.im/docs
- * POST /v1/tasks 创建任务 → 轮询 GET /v1/tasks/{id} 直到 completed
+ * Manus Official API Client
+ * Docs: https://open.manus.im/docs
+ * POST /v1/tasks Create task → Poll GET /v1/tasks/{id} until completed
  */
 
 const MANUS_API_BASE = "https://api.manus.ai";
@@ -89,7 +89,7 @@ export class ManusApiClient {
     return this.request<GetTaskResponse>(`/v1/tasks/${taskId}`);
   }
 
-  /** 创建任务并轮询直到完成，返回 assistant 文本 */
+  /** Create task and poll until complete, return assistant text */
   async chat(params: {
     prompt: string;
     agentProfile?: string;

@@ -53,16 +53,16 @@ export async function loginDeepseekWebAttachOnly(params: {
     });
     context = browser.contexts()[0] || await browser.newContext();
 
-    // 查找是否已经有打开的 DeepSeek 页面
+    // Check if a DeepSeek page is already open
     const existingPages = context.pages();
     let page = existingPages.find(p => p.url().includes('deepseek.com') || p.url().includes('chat.deepseek.com'));
 
     if (!page) {
-      // 没有 DeepSeek 页面，创建新页面
+      // No DeepSeek page, create new page
       page = await context.newPage();
       params.onProgress("Opening DeepSeek page...");
     } else {
-      // 已有 DeepSeek 页面，切换到该页面
+      // Existing DeepSeek page, switch to it
       params.onProgress("Found existing DeepSeek page, switching to it...");
       await page.bringToFront();
     }
@@ -292,16 +292,16 @@ export async function loginDeepseekWeb(params: {
       headers: getHeadersWithAuth(wsUrl),
     });
     const context = browser.contexts()[0] || (await browser.newContext());
-    // 查找是否已经有打开的 DeepSeek 页面
+    // Check if a DeepSeek page is already open
     const existingPages = context.pages();
     let page = existingPages.find(p => p.url().includes('deepseek.com') || p.url().includes('chat.deepseek.com'));
 
     if (!page) {
-      // 没有 DeepSeek 页面，创建新页面
+      // No DeepSeek page, create new page
       page = await context.newPage();
       params.onProgress("Opening DeepSeek page...");
     } else {
-      // 已有 DeepSeek 页面，切换到该页面
+      // Existing DeepSeek page, switch to it
       params.onProgress("Found existing DeepSeek page, switching to it...");
       await page.bringToFront();
     }
@@ -319,11 +319,11 @@ export async function loginDeepseekWeb(params: {
     let bearer = "";
     let userAgent = await page.evaluate(() => navigator.userAgent);
 
-    // 如果已登录，直接尝试获取 bearer token
+    // If logged in, attempt to get bearer token directly
     if (hasValidSession) {
       params.onProgress("Found existing session, attempting to capture credentials...");
 
-      // 尝试从 API 获取 token
+      // Attempt to get token from API
       try {
         const response = await page.request.get("https://chat.deepseek.com/api/v0/users/current");
         if (response.ok()) {
@@ -342,12 +342,12 @@ export async function loginDeepseekWeb(params: {
         console.log(`[DeepSeek] Could not auto-capture token: ${e}`);
       }
 
-      // API 返回没有 token（可能过期），清除会话状态让用户重新登录
+      // API returned no token (may have expired), clear session state and let user re-login
       params.onProgress("Session detected but token expired. Redirecting to login page...");
       hasValidSession = false;
     }
 
-    // 未登录或无法自动捕获，跳转到登录页面等待用户登录
+    // Not logged in or unable to auto-capture, redirect to login page and wait for user login
     await page.goto("https://chat.deepseek.com");
     userAgent = await page.evaluate(() => navigator.userAgent);
 

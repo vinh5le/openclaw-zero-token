@@ -21,7 +21,7 @@ export interface DoubaoWebClientOptions {
 
 /**
  * Doubao Web Client using Playwright browser context
- * 参考 Claude 的实现，在浏览器上下文中执行请求以绕过反爬虫
+ * Reference Claude's implementation, executing requests in the browser context to bypass anti-scraping
  */
 export class DoubaoWebClientBrowser {
   private sessionid: string;
@@ -32,7 +32,7 @@ export class DoubaoWebClientBrowser {
   private browser: BrowserContext | null = null;
   private page: Page | null = null;
   private running: RunningChrome | null = null;
-  private conversationId: string | null = null;  // 复用对话 ID
+  private conversationId: string | null = null;  // Reuse conversation ID
 
   constructor(options: DoubaoWebClientOptions | string) {
     if (typeof options === "string") {
@@ -159,11 +159,11 @@ export class DoubaoWebClientBrowser {
   }
 
   async init() {
-    // 确保浏览器已启动并设置好 Cookie
+    // Ensure browser is launched and cookies are set
     await this.ensureBrowser();
   }
 
-  /** 将多轮消息合并为 samantha 接口需要的单条 content（纯文本） */
+  /** Merge multi-turn messages into a single content (plain text) required by the samantha interface */
   private mergeMessagesForSamantha(messages: Array<{ role: string; content: string }>): string {
     return messages
       .map(m => {
@@ -187,7 +187,7 @@ export class DoubaoWebClientBrowser {
     console.log(`[Doubao Web Browser] Model: ${modelId}`);
     console.log(`[Doubao Web Browser] Messages count: ${params.messages.length}`);
 
-    // 构建请求体
+    // Build request body
     const requestBody = {
       messages: [
         {
@@ -200,22 +200,22 @@ export class DoubaoWebClientBrowser {
       completion_option: {
         is_regen: false,
         with_suggest: true,
-        need_create_conversation: !this.conversationId,  // 如果已有 conversation_id 则不复创建
+        need_create_conversation: !this.conversationId,  // If conversation_id exists, do not recreate
         launch_stage: 1,
         is_replace: false,
         is_delete: false,
         message_from: 0,
         event_id: "0",
       },
-      conversation_id: this.conversationId || "0",  // 复用已有的 conversation_id
+      conversation_id: this.conversationId || "0",  // Reuse existing conversation_id
       local_conversation_id: `local_16${Date.now().toString().slice(-14)}`,
       local_message_id: crypto.randomUUID(),
     };
 
-    // 在浏览器上下文中执行请求（关键！）
+    // Execute request in browser context (critical!)
     const responseData = await page.evaluate(
       async ({ baseUrl, body }) => {
-        // 构建查询参数（浏览器会自动生成动态参数）
+        // Build query parameters (browser will automatically generate dynamic parameters)
         const params = new URLSearchParams({
           aid: "497858",
           device_platform: "web",
@@ -248,7 +248,7 @@ export class DoubaoWebClientBrowser {
           return { ok: false, status: res.status, error: errorText };
         }
 
-        // 读取流式响应
+        // Read streaming response
         const reader = res.body?.getReader();
         if (!reader) {
           return { ok: false, status: 500, error: "No response body" };
@@ -284,10 +284,10 @@ export class DoubaoWebClientBrowser {
     console.log(`[Doubao Web Browser] Response data length: ${responseData.data?.length || 0} bytes`);
     console.log(`[Doubao Web Browser] Response data preview: ${responseData.data?.slice(0, 500)}`);
 
-    // 从响应中提取 conversation_id
+    // Extract conversation_id from response
     if (!this.conversationId && responseData.data) {
       try {
-        // 查找 data 中的 conversation_id（可能在各个事件的 event_data 中）
+        // Find conversation_id in data (may be in event_data of various events)
         const lines = responseData.data.split('\n');
         for (const line of lines) {
           if (line.startsWith('data:') && line.includes('conversation_id')) {
@@ -304,7 +304,7 @@ export class DoubaoWebClientBrowser {
       }
     }
 
-    // 转换为 ReadableStream
+    // Convert to ReadableStream
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start(controller) {

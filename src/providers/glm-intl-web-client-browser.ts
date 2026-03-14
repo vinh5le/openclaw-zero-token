@@ -318,7 +318,7 @@ export class GlmIntlWebClientBrowser {
         await input.click({ timeout: 5000 });
         await input.fill(params.message);
         const sendBtn = page
-          .locator('button.sendMessageButton, button[aria-label*="Send"], button:has-text("发送")')
+          .locator('button.sendMessageButton, button[aria-label*="Send"], button:has-text("Send"), button:has-text("发送")')
           .first();
         if ((await sendBtn.count()) > 0) {
           await sendBtn.click();

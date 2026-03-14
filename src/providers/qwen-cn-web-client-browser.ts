@@ -301,7 +301,7 @@ export class QwenCNWebClientBrowser {
     return [
       {
         id: "Qwen3.5-Plus",
-        name: "Qwen 3.5 Plus (国内版)",
+        name: "Qwen 3.5 Plus (CN Version)",
         provider: "qwen-cn-web",
         api: "qwen-cn-web",
         contextWindow: 128000,
@@ -309,7 +309,7 @@ export class QwenCNWebClientBrowser {
       },
       {
         id: "Qwen3.5-Turbo",
-        name: "Qwen 3.5 Turbo (国内版)",
+        name: "Qwen 3.5 Turbo (CN Version)",
         provider: "qwen-cn-web",
         api: "qwen-cn-web",
         contextWindow: 32768,

@@ -5,14 +5,14 @@ export interface DoubaoAuth {
   sessionid: string;
   ttwid?: string;
   userAgent?: string;
-  // 动态参数（可选，可以从浏览器实时获取）
+  // Dynamic parameters (optional, can be obtained real-time from browser)
   msToken?: string;
   a_bogus?: string;
   fp?: string; // s_v_web_id
   tea_uuid?: string;
   device_id?: string;
   web_tab_id?: string;
-  // 额外参数（从浏览器捕获）
+  // Extra parameters (captured from browser)
   aid?: string;
   version_code?: string;
   pc_version?: string;
@@ -57,11 +57,11 @@ export interface DoubaoChatResponse {
 }
 
 const DOUBAO_API_BASE = "https://www.doubao.com";
-/** 使用 /samantha/chat/completion 端点获取流式响应 */
+/** Use /samantha/chat/completion endpoint for streaming response */
 const USE_SAMANTHA_API = true;
 
 export interface DoubaoWebClientConfig {
-  // 从浏览器捕获的查询参数
+  // Query parameters captured from browser
   aid?: string;
   device_id?: string;
   device_platform?: string;
@@ -78,7 +78,7 @@ export interface DoubaoWebClientConfig {
   version_code?: string;
   web_id?: string;
   web_tab_id?: string;
-  // 动态生成的参数（需要从浏览器实时获取）
+  // Dynamically generated parameters (require real-time browser retrieval)
   msToken?: string;
   a_bogus?: string;
 }
@@ -98,7 +98,7 @@ export class DoubaoWebClient {
       this.auth = auth;
     }
 
-    // 从auth中提取动态参数到config
+    // Extract dynamic parameters from auth into config
     const dynamicConfig: Partial<DoubaoWebClientConfig> = {};
     if (this.auth.msToken) dynamicConfig.msToken = this.auth.msToken;
     if (this.auth.a_bogus) dynamicConfig.a_bogus = this.auth.a_bogus;
@@ -112,7 +112,7 @@ export class DoubaoWebClient {
     if (this.auth.region) dynamicConfig.region = this.auth.region;
     if (this.auth.language) dynamicConfig.language = this.auth.language;
 
-    // 设置默认配置
+    // Set default configuration
     this.config = {
       aid: "497858",
       device_platform: "web",
@@ -128,7 +128,7 @@ export class DoubaoWebClient {
       ...config,
     };
 
-    // 调试日志
+    // Debug logs
     console.log(`[DoubaoWebClient] Config keys: ${Object.keys(this.config).join(', ')}`);
     console.log(`[DoubaoWebClient] fp in config: ${this.config.fp}`);
     console.log(`[DoubaoWebClient] tea_uuid in config: ${this.config.tea_uuid}`);
@@ -166,14 +166,14 @@ export class DoubaoWebClient {
   private buildQueryParams(): string {
     const params = new URLSearchParams();
     
-    // 添加固定参数
+    // Add static parameters
     Object.entries(this.config).forEach(([key, value]) => {
       if (value !== undefined && value !== null && key !== 'msToken' && key !== 'a_bogus') {
         params.append(key, value.toString());
       }
     });
 
-    // 添加动态参数（如果有）
+    // Add dynamic parameters (if any)
     if (this.config.msToken) {
       params.append('msToken', this.config.msToken);
     }
@@ -216,7 +216,7 @@ export class DoubaoWebClient {
     ];
   }
 
-  /** 将多轮消息合并为 samantha 接口需要的单条 content（纯文本） */
+  /** Merge multi-turn messages into a single content (plain text) required by the samantha interface */
   private mergeMessagesForSamantha(messages: DoubaoMessage[]): string {
     return messages
       .map(m => {
@@ -280,7 +280,7 @@ export class DoubaoWebClient {
       (headers as Record<string, string>)["Agw-js-conv"] = "str";
     }
 
-    console.log(`🌐 发送请求到: ${url}`);
+    console.log(`🌐 Sending request to: ${url}`);
 
     const response = await fetch(url, {
       method: "POST",
@@ -290,11 +290,11 @@ export class DoubaoWebClient {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ 豆包 API 错误: ${response.status} - ${errorText}`);
+      console.error(`❌ Doubao API Error: ${response.status} - ${errorText}`);
       throw new Error(`Doubao API error: ${response.status} - ${errorText}`);
     }
 
-    console.log(`✅ 请求成功，状态码: ${response.status}`);
+    console.log(`✅ Request successful, status code: ${response.status}`);
 
     if (request.stream && onChunk) {
       return this.handleStreamResponse(response, onChunk);
@@ -304,7 +304,7 @@ export class DoubaoWebClient {
       return this.streamGenerator(response);
     }
 
-    // 非流式响应（豆包主要使用流式）
+    // Non-streaming response (Doubao mainly uses streaming)
     return this.parseNonStreamResponse(response);
   }
 
@@ -321,7 +321,7 @@ export class DoubaoWebClient {
     let buffer = "";
     let fullContent = "";
     
-    // SSE 解析状态
+    // SSE parsing state
     let currentEvent: { id?: string; event?: string; data?: string } = {};
 
     while (true) {
@@ -344,7 +344,7 @@ export class DoubaoWebClient {
           continue;
         }
 
-        // 豆包单行格式：id: 123 event: XXX data: {...}
+        // Doubao single-line format: id: 123 event: XXX data: {...}
         const single = this.parseSingleLineSSE(trimmed);
         if (single) {
           await this.processSSEEvent(
@@ -374,7 +374,7 @@ export class DoubaoWebClient {
       });
     }
 
-    // 返回一个模拟的响应对象
+    // Return a mock response object
     return {
       id: `chatcmpl-${Date.now()}`,
       model: "doubao-seed-2.0",
@@ -424,19 +424,19 @@ export class DoubaoWebClient {
           break;
           
         case "SSE_REPLY_END":
-          console.log(`✅ 流式回复结束`);
+          console.log(`✅ Streaming response complete`);
           break;
           
         case "SSE_HEARTBEAT":
-          // 心跳包，忽略
+          // Heartbeat packet, ignore
           break;
           
         case "SSE_ACK":
-          // 确认包，忽略
+          // Acknowledgement packet, ignore
           break;
           
         case "STREAM_MSG_NOTIFY":
-          // 消息通知，可能包含初始内容
+          // Message notification, may contain initial content
           if (data.content?.content_block) {
             for (const block of data.content.content_block) {
               if (block.content?.text_block?.text) {
@@ -448,22 +448,22 @@ export class DoubaoWebClient {
           break;
           
         case "STREAM_ERROR":
-          // 处理流式错误，特别是速率限制
-          console.error(`❌ 豆包流式错误:`, data);
+          // Handle streaming errors, especially rate limiting
+          console.error(`❌ Doubao streaming error:`, data);
           if (data.error_code === 710022004) {
-            throw new Error(`豆包速率限制: ${data.error_msg} (错误码: ${data.error_code})`);
+            throw new Error(`Doubao Rate Limit: ${data.error_msg} (error code: ${data.error_code})`);
           } else {
-            throw new Error(`豆包API错误: ${data.error_msg} (错误码: ${data.error_code})`);
+            throw new Error(`Doubao API Error: ${data.error_msg} (error code: ${data.error_code})`);
           }
           break;
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.warn(`⚠️ 解析 SSE 数据失败: ${errorMessage}, 事件: ${event.event}, 数据: ${event.data?.substring(0, 100)}`);
+      console.warn(`⚠️ Failed to parse SSE data: ${errorMessage}, Event: ${event.event}, Data: ${event.data?.substring(0, 100)}`);
     }
   }
 
-  /** 豆包可能使用单行 SSE：id: 123 event: CHUNK_DELTA data: {"text":"..."} */
+  /** Doubao may use single-line SSE: id: 123 event: CHUNK_DELTA data: {"text":"..."} */
   private parseSingleLineSSE(line: string): { event: string; data: string } | null {
     const m = line.match(/id:\s*\d+\s+event:\s*(\S+)\s+data:\s*(.+)/);
     if (!m) return null;
@@ -492,7 +492,7 @@ export class DoubaoWebClient {
       const content = JSON.parse(message.content) as { text?: string };
       if (content.text) chunks.push(content.text);
     } catch {
-      // 非 samantha 格式，忽略
+      // Not samantha format, ignore
     }
     return chunks;
   }
@@ -520,7 +520,7 @@ export class DoubaoWebClient {
       for (const line of lines) {
         const trimmed = line.trim();
         if (trimmed === "") {
-          // 空行表示多行格式的一个事件结束
+          // Empty line indicates the end of an event in multi-line format
           if (currentEvent.event && currentEvent.data) {
             eventCount++;
             const chunks = await this.extractTextFromEvent(currentEvent);
@@ -533,7 +533,7 @@ export class DoubaoWebClient {
           continue;
         }
 
-        // 豆包可能使用单行格式：id: 123 event: XXX data: {...}
+        // Doubao may use single-line format: id: 123 event: XXX data: {...}
         const single = this.parseSingleLineSSE(trimmed);
         if (single) {
           eventCount++;
@@ -549,7 +549,7 @@ export class DoubaoWebClient {
           continue;
         }
 
-        // 豆包 samantha API 格式：整行为 JSON 或 "data: {...}"，含 event_type、event_data
+        // Doubao samantha API format: entire line is JSON or "data: {...}", containing event_type, event_data
         const dataLine = trimmed.startsWith("data: ") ? trimmed.slice(6).trim() : trimmed;
         const samanthaChunks = this.extractTextFromSamanthaLine(dataLine);
         if (samanthaChunks.length > 0) {
@@ -562,7 +562,7 @@ export class DoubaoWebClient {
           continue;
         }
 
-        // 多行 SSE 字段
+        // Multi-line SSE fields
         if (trimmed.startsWith("id: ")) {
           currentEvent.id = trimmed.substring(4).trim();
         } else if (trimmed.startsWith("event: ")) {
@@ -573,7 +573,7 @@ export class DoubaoWebClient {
       }
     }
 
-    // 处理最后一个多行事件
+    // Handle the last multi-line event
     if (currentEvent.event && currentEvent.data) {
       eventCount++;
       const chunks = await this.extractTextFromEvent(currentEvent);
@@ -585,7 +585,7 @@ export class DoubaoWebClient {
 
     if (eventCount > 0 && textEventCount === 0) {
       const msg =
-        `[DoubaoWebClient] 收到 ${eventCount} 个 SSE 事件但未解析出文本，豆包 API 格式可能已变更。请检查认证 (sessionid/cookie) 是否有效，或查看控制台调试输出。`;
+        `[DoubaoWebClient] Received ${eventCount} SSE events but parsed no text, Doubao API format might have changed. Please check if authentication (sessionid/cookie) is valid, or check console debug output.`;
       console.warn(msg);
       throw new Error(msg);
     }
@@ -626,19 +626,19 @@ export class DoubaoWebClient {
           }
           break;
         default:
-          // 未识别的 event 类型，便于排查豆包实际返回格式
+          // Unrecognized event type, used for troubleshooting Doubao's actual return format
           if (
             event.event !== "SSE_HEARTBEAT" &&
             event.event !== "SSE_ACK" &&
             event.event !== "SSE_REPLY_END"
           ) {
             console.warn(
-              `[DoubaoWebClient] 未处理的 SSE event: ${event.event}, data 前 120 字符: ${event.data.substring(0, 120)}`,
+              `[DoubaoWebClient] Unhandled SSE event: ${event.event}, data first 120 chars: ${event.data.substring(0, 120)}`,
             );
           }
       }
     } catch (error) {
-      // 忽略解析错误
+      // Ignore parsing errors
     }
     
     return chunks;
@@ -647,7 +647,7 @@ export class DoubaoWebClient {
   private async parseNonStreamResponse(response: Response): Promise<DoubaoChatResponse> {
     const text = await response.text();
     
-    // 尝试解析为 SSE 格式
+    // Try to parse as SSE format
     const lines = text.split("\n");
     let fullContent = "";
 
@@ -672,7 +672,7 @@ export class DoubaoWebClient {
               });
             }
           } catch (error) {
-            // 忽略解析错误
+            // Ignore parsing errors
           }
         }
       }
@@ -699,7 +699,7 @@ export class DoubaoWebClient {
 
   async checkSession(): Promise<boolean> {
     try {
-      // 使用一个简单的检查端点
+      // Use a simple check endpoint
       const url = `${DOUBAO_API_BASE}/im/conversation/info?${this.buildQueryParams()}`;
       const response = await fetch(url, {
         method: "GET",
@@ -711,12 +711,12 @@ export class DoubaoWebClient {
     }
   }
 
-  // 更新配置方法
+  // Update configuration method
   updateConfig(config: Partial<DoubaoWebClientConfig>): void {
     this.config = { ...this.config, ...config };
   }
 
-  // 获取当前配置
+  // Get current configuration
   getConfig(): DoubaoWebClientConfig {
     return { ...this.config };
   }

@@ -1,0 +1,25 @@
+# Agent Execution Rules & Environment Awareness
+
+## 1. Terminal Environment
+- **Default Shell**: Always use **Git Bash** (`bash.exe`) for all terminal operations.
+- **Operating System**: Windows (running via Git Bash emulation).
+- **Path Handling**: Use POSIX-style paths (e.g., `/c/Users/` or `./scripts/`) instead of Windows-style (`C:\Users\` or `.\scripts\`).
+
+## 2. Pre-Execution Protocol (Environment Check)
+Before running any sequence of commands, the Agent MUST:
+1. Verify the current shell by implicitly or explicitly checking `$SHELL` or using `uname`.
+2. Ensure it is not accidentally running in PowerShell or CMD.
+3. If the environment is incorrect, STOP and ask the user to switch the default terminal to Git Bash.
+
+## 3. Command Preferences
+- **Package Management**: Use `npm` or `yarn` commands normally, but ensure they are wrapped in Bash-compatible syntax if using pipes.
+- **File Operations**: Use `ls`, `mkdir -p`, `rm -rf`, `cp`, and `mv`. **Do not use** `dir`, `del`, or `copy`.
+- **Scripts**: Always execute shell scripts using `sh script.sh` or `./script.sh`.
+
+## 4. Error Prevention
+- **Blocking Calls**: Avoid commands that trigger interactive Windows pop-ups.
+- **Line Endings**: Be aware of CRLF vs LF issues; prefer LF for scripts created via terminal.
+- **Waiting State**: If a command hangs in "Waiting..." state, check if the shell is expecting a Windows-specific input and terminate it.
+
+## 5. Summary for Agent
+"I am an agent working in a Windows environment but strictly using **Git Bash**. I must think in Bash syntax, use forward slashes for paths, and always verify my environment before executing complex scripts to avoid system-specific command errors."

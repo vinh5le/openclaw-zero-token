@@ -149,7 +149,7 @@ export class QwenWebClientBrowser {
     console.log(`[Qwen Web Browser] Model: ${model}`);
     console.log(`[Qwen Web Browser] Message: ${params.message.substring(0, 100)}...`);
 
-    // Step 1: Create a new chat session to get chat_id（30s 超时）
+    // Step 1: Create a new chat session to get chat_id (30s timeout)
     const createChatTimeoutMs = 30_000;
     const createChatResult = await page.evaluate(
       async ({ baseUrl, timeoutMs }) => {
@@ -210,7 +210,7 @@ export class QwenWebClientBrowser {
     const chatId = createChatResult.chatId;
     console.log(`[Qwen Web Browser] Chat ID: ${chatId}`);
 
-    // Step 2: Send message using the chat_id（加入 fetch 超时，默认 5 分钟，避免长时间无响应导致 run 级 timeout）
+    // Step 2: Send message using the chat_id (include fetch timeout, default 5 minutes, to avoid run-level timeout due to long inactivity)
     const fetchTimeoutMs = 300_000;
     const fid = crypto.randomUUID();
     const responseData = await page.evaluate(
