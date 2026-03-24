@@ -136,17 +136,44 @@ echo "Starting Chrome debug mode..."
 echo "Port: 9222"
 echo ""
 
-"$CHROME_PATH" \
-  --remote-debugging-port=9222 \
-  --user-data-dir="$USER_DATA_DIR" \
-  --no-first-run \
-  --no-default-browser-check \
-  --disable-background-networking \
-  --disable-sync \
-  --disable-translate \
-  --disable-features=TranslateUI \
-  --remote-allow-origins=* \
-  > "$TMP_LOG" 2>&1 &
+# Linux: Chrome needs --no-sandbox if running as root
+EXTRA_FLAGS=""
+if [[ ("$OS" == "linux" || "$OS" == "wsl") && "$(id -u)" == "0" && ! "$CHROME_PATH" == *.exe ]]; then
+  echo "Running as root on Linux/WSL, adding --no-sandbox flag..."
+  EXTRA_FLAGS="--no-sandbox --disable-setuid-sandbox"
+fi
+
+# Use eval if it's Windows chrome to handle spaces in path properly if needed
+if [[ "$CHROME_PATH" == *.exe ]]; then
+  # Ensure the directory exists (for Windows, wslpath -w gave us something like C:\...)
+  mkdir -p "$(wslpath -u "$(wslpath -w "$HOME/.config/chrome-openclaw-debug")")" 2>/dev/null
+  
+  # Run directly with &
+  "$CHROME_PATH" \
+    --remote-debugging-port=9222 \
+    --user-data-dir="$USER_DATA_DIR" \
+    --no-first-run \
+    --no-default-browser-check \
+    --disable-background-networking \
+    --disable-sync \
+    --disable-translate \
+    --disable-features=TranslateUI \
+    --remote-allow-origins=* \
+    > "$TMP_LOG" 2>&1 &
+else
+  "$CHROME_PATH" \
+    $EXTRA_FLAGS \
+    --remote-debugging-port=9222 \
+    --user-data-dir="$USER_DATA_DIR" \
+    --no-first-run \
+    --no-default-browser-check \
+    --disable-background-networking \
+    --disable-sync \
+    --disable-translate \
+    --disable-features=TranslateUI \
+    --remote-allow-origins=* \
+    > "$TMP_LOG" 2>&1 &
+fi
 
 CHROME_PID=$!
 echo "Chrome Log: $TMP_LOG"
