@@ -1,16 +1,16 @@
 #!/bin/bash
-# 启动 Chrome 调试模式（用于 OpenClaw 连接）
-# 兼容 macOS / Linux (含 Deepin) / Windows (Git Bash / WSL)
-# 单实例：若已有调试 Chrome 则先关闭再重启
+# Start Chrome debug mode (for OpenClaw connection)
+# Compatible with macOS / Linux (including Deepin) / Windows (Git Bash / WSL)
+# Single instance: If a debug Chrome is already running, close it first then restart it
 
 echo "=========================================="
-echo "  启动 Chrome 调试模式"
+echo "  Starting Chrome Debug Mode"
 echo "=========================================="
 echo ""
 
-# ─── 环境检测 ────────────────────────────────────────────────
+# ─── Environment Detection ───────────────────────────────────
 detect_os() {
-  # 使用 uname 检测更可靠
+  # Using uname for more reliable detection
   case "$(uname -s)" in
     Darwin*)  echo "mac" ;;
     MINGW*|MSYS*|CYGWIN*) echo "win" ;;
@@ -25,7 +25,7 @@ detect_os() {
 }
 
 detect_chrome() {
-  # Linux: 按优先级逐一检测
+  # Linux: Check one by one by priority
   local linux_paths=(
     "/opt/apps/cn.google.chrome-pre/files/google/chrome/google-chrome"  # Deepin
     "/opt/google/chrome/google-chrome"
@@ -48,7 +48,7 @@ detect_chrome() {
 
   case "$OS" in
     mac)
-      # macOS 直接用 open 命令打开 Chrome.app
+      # macOS directly uses open command to open Chrome.app
       if [ -d "/Applications/Google Chrome.app" ]; then
         echo "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
         return
@@ -57,19 +57,19 @@ detect_chrome() {
         echo "/Applications/Chromium.app/Contents/MacOS/Chromium"
         return
       fi
-      # 也尝试命令方式
+      # Try command fallback
       command -v google-chrome >/dev/null 2>&1 && echo "google-chrome" && return
       ;;
-    win)  #  纯 Windows (Git Bash) 单独走 Windows 路径
+    win)  # Pure Windows (Git Bash) routes through Windows paths
       for p in "${win_paths[@]}"; do
         [ -f "$p" ] && echo "$p" && return
       done
       ;;
-    wsl|linux)  #  核心修复：WSL 和 Linux 归为一类
-      for p in "${linux_paths[@]}"; do  # 去查 WSL 内的 Linux 路径（/usr/bin/...）
+    wsl|linux)  # Core fix: Treat WSL and Linux as similar
+      for p in "${linux_paths[@]}"; do  # Check Linux paths inside WSL (/usr/bin/...)
         [ -f "$p" ] && echo "$p" && return
       done
-      # 命令回退
+      # Command fallback
       for cmd in google-chrome google-chrome-stable chromium chromium-browser; do
         command -v "$cmd" >/dev/null 2>&1 && echo "$cmd" && return
       done
@@ -91,49 +91,49 @@ OS=$(detect_os)
 CHROME_PATH=$(detect_chrome)
 USER_DATA_DIR=$(detect_user_data_dir)
 
-echo "系统: $OS"
+echo "OS: $OS"
 
 if [ -z "$CHROME_PATH" ]; then
-  echo "✗ 未找到 Chrome / Chromium，请先安装后重试"
+  echo "✗ Chrome / Chromium not found, please install it and try again"
   echo ""
   case "$OS" in
     linux) echo "  Ubuntu/Debian: sudo apt install google-chrome-stable" ;;
-    mac)   echo "  下载: https://www.google.com/chrome/" ;;
-    win)   echo "  下载: https://www.google.com/chrome/" ;;
+    mac)   echo "  Download: https://www.google.com/chrome/" ;;
+    win)   echo "  Download: https://www.google.com/chrome/" ;;
   esac
   exit 1
 fi
 
 echo "Chrome: $CHROME_PATH"
-echo "用户数据目录: $USER_DATA_DIR"
+echo "User Data Directory: $USER_DATA_DIR"
 echo ""
 
-# ─── 单实例：关闭已有调试 Chrome ─────────────────────────────
+# ─── Single instance: Close existing debug Chrome ────────────
 if pgrep -f "chrome.*remote-debugging-port=9222" > /dev/null 2>&1; then
-  echo "检测到已有调试 Chrome，正在关闭..."
+  echo "Existing debug Chrome detected, closing it..."
   pkill -f "chrome.*remote-debugging-port=9222" 2>/dev/null
   sleep 2
 
   if pgrep -f "chrome.*remote-debugging-port=9222" > /dev/null 2>&1; then
-    echo "普通关闭失败，尝试强制关闭..."
+    echo "Normal close failed, attempting force close..."
     pkill -9 -f "chrome.*remote-debugging-port=9222" 2>/dev/null
     sleep 1
   fi
 
   if pgrep -f "chrome.*remote-debugging-port=9222" > /dev/null 2>&1; then
-    echo "✗ 无法关闭现有 Chrome，请手动执行: pkill -9 -f 'chrome.*remote-debugging-port=9222'"
+    echo "✗ Could not close existing Chrome, please manually run: pkill -9 -f 'chrome.*remote-debugging-port=9222'"
     exit 1
   fi
-  echo "✓ 已关闭"
+  echo "✓ Successfully closed"
   echo ""
 fi
 
-# ─── 启动 Chrome ─────────────────────────────────────────────
+# ─── Start Chrome ────────────────────────────────────────────
 TMP_LOG="/tmp/chrome-debug.log"
 [ ! -d /tmp ] && TMP_LOG="$HOME/chrome-debug.log"
 
-echo "正在启动 Chrome 调试模式..."
-echo "端口: 9222"
+echo "Starting Chrome debug mode..."
+echo "Port: 9222"
 echo ""
 
 "$CHROME_PATH" \
@@ -149,10 +149,10 @@ echo ""
   > "$TMP_LOG" 2>&1 &
 
 CHROME_PID=$!
-echo "Chrome 日志: $TMP_LOG"
+echo "Chrome Log: $TMP_LOG"
 
-# ─── 等待启动 ────────────────────────────────────────────────
-echo "等待 Chrome 启动..."
+# ─── Wait for startup ────────────────────────────────────────
+echo "Waiting for Chrome to start..."
 for i in {1..15}; do
   if curl -s http://127.0.0.1:9222/json/version > /dev/null 2>&1; then
     break
@@ -163,18 +163,18 @@ done
 echo ""
 echo ""
 
-# ─── 检查结果 ────────────────────────────────────────────────
+# ─── Check results ───────────────────────────────────────────
 if curl -s http://127.0.0.1:9222/json/version > /dev/null 2>&1; then
-  VERSION_INFO=$(curl -s http://127.0.0.1:9222/json/version | jq -r '.Browser' 2>/dev/null || echo "未知版本")
+  VERSION_INFO=$(curl -s http://127.0.0.1:9222/json/version | jq -r '.Browser' 2>/dev/null || echo "Unknown version")
 
-  echo "✓ Chrome 调试模式启动成功！"
+  echo "✓ Chrome debug mode started successfully!"
   echo ""
   echo "Chrome PID: $CHROME_PID"
-  echo "Chrome 版本: $VERSION_INFO"
-  echo "调试端口: http://127.0.0.1:9222"
-  echo "用户数据目录: $USER_DATA_DIR"
+  echo "Chrome Version: $VERSION_INFO"
+  echo "Debug Port: http://127.0.0.1:9222"
+  echo "User Data Directory: $USER_DATA_DIR"
   echo ""
-  echo "正在打开各 Web 平台登录页（便于授权）..."
+  echo "Opening login pages for each Web platform (for easy authorization)..."
 
   WEB_URLS=(
     "https://claude.ai/new"
@@ -194,28 +194,28 @@ if curl -s http://127.0.0.1:9222/json/version > /dev/null 2>&1; then
     sleep 0.5
   done
 
-  echo "✓ 已打开: Claude, ChatGPT, Doubao, Qwen, Kimi, Gemini, Grok, GLM（DeepSeek 在第 5 步单独登录）"
+  echo "✓ Opened: Claude, ChatGPT, Doubao, Qwen, Kimi, Gemini, Grok, GLM (DeepSeek logs in separately in Step 5)"
   echo ""
   echo "=========================================="
-  echo "下一步操作："
+  echo "Next Steps:"
   echo "=========================================="
-  echo "1. 在各标签页中登录需要使用的平台"
-  echo "2. 确保 config 中 browser.attachOnly=true 且 browser.cdpUrl=http://127.0.0.1:9222"
-  echo "3. 运行 ./onboard.sh webauth 选择对应平台完成授权（将复用此浏览器）"
+  echo "1. Log into the required platforms in their respective tabs"
+  echo "2. Ensure browser.attachOnly=true and browser.cdpUrl=http://127.0.0.1:9222 are in your config"
+  echo "3. Run ./onboard.sh webauth to select the platform and complete authorization (this browser will be reused)"
   echo ""
-  echo "停止调试模式："
+  echo "To stop debug mode:"
   echo "  pkill -f 'chrome.*remote-debugging-port=9222'"
   echo "=========================================="
 else
-  echo "✗ Chrome 启动失败"
+  echo "✗ Chrome failed to start"
   echo ""
-  echo "请检查："
-  echo "  1. Chrome 路径: $CHROME_PATH"
-  echo "  2. 端口 9222 是否被占用: lsof -i:9222"
-  echo "  3. 用户数据目录权限: $USER_DATA_DIR"
-  echo "  4. 启动日志: $TMP_LOG"
+  echo "Please check:"
+  echo "  1. Chrome Path: $CHROME_PATH"
+  echo "  2. Is port 9222 already in use? Run: lsof -i:9222"
+  echo "  3. User Data Directory permissions: $USER_DATA_DIR"
+  echo "  4. Startup Log: $TMP_LOG"
   echo ""
-  echo "尝试手动启动："
+  echo "Try starting it manually:"
   echo "  \"$CHROME_PATH\" --remote-debugging-port=9222 --user-data-dir=\"$USER_DATA_DIR\""
   exit 1
 fi

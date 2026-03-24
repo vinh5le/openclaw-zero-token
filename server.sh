@@ -1,6 +1,6 @@
 #!/bin/bash
-# OpenClaw Gateway 服务启动脚本
-# 兼容 macOS / Linux (含 Deepin) / Windows (Git Bash / WSL)
+# OpenClaw Gateway service startup script
+# Compatible with macOS / Linux (including Deepin) / Windows (Git Bash / WSL)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 STATE_DIR="$SCRIPT_DIR/.openclaw-upstream-state"
@@ -8,10 +8,10 @@ CONFIG_FILE="$STATE_DIR/openclaw.json"
 PID_FILE="$SCRIPT_DIR/.gateway.pid"
 PORT=3002
 
-# 日志文件名（区分不同实例）
+# Log filename prefix (differentiates between instances)
 LOG_PREFIX="openclaw-upstream"
 
-# ─── 环境检测 ────────────────────────────────────────────────
+# ─── Environment Detection ───────────────────────────────────
 detect_os() {
   case "$OSTYPE" in
     darwin*)  echo "mac" ;;
@@ -39,7 +39,7 @@ detect_node() {
   echo ""
 }
 
-# 查询占用指定端口的 PID（跨平台）
+# Query PID occupying a specific port (Cross-platform)
 port_pid() {
   local port=$1
   if command -v lsof >/dev/null 2>&1; then
@@ -52,7 +52,7 @@ port_pid() {
   fi
 }
 
-# 打开浏览器（跨平台）
+# Open browser (Cross-platform)
 open_browser() {
   local url=$1
   case "$OS" in
@@ -63,13 +63,13 @@ open_browser() {
       if command -v xdg-open >/dev/null 2>&1; then
         xdg-open "$url" 2>/dev/null &
       else
-        echo "请手动在浏览器中打开: $url"
+        echo "Please manually open in your browser: $url"
       fi
       ;;
   esac
 }
 
-# 临时日志路径（Windows 不一定有 /tmp）
+# Temporary log path (Windows might not have /tmp)
 tmp_log() {
   if [ -d /tmp ]; then
     echo "/tmp/openclaw-upstream-gateway.log"
@@ -84,11 +84,11 @@ LOG_FILE="$SCRIPT_DIR/logs/openclaw-upstream.log"
 TMP_LOG=$(tmp_log)
 
 if [ -z "$NODE" ]; then
-  echo "✗ 未找到 node，请先安装 Node.js: https://nodejs.org"
+  echo "✗ node not found, please install Node.js first: https://nodejs.org"
   exit 1
 fi
 
-# ─── 初始化 ──────────────────────────────────────────────────
+# ─── Initialization ──────────────────────────────────────────
 mkdir -p "$STATE_DIR"
 mkdir -p "$SCRIPT_DIR/logs"
 
@@ -96,25 +96,25 @@ EXAMPLE_CONFIG="$SCRIPT_DIR/.openclaw-state.example/openclaw.json"
 if [ ! -f "$CONFIG_FILE" ]; then
   if [ -f "$EXAMPLE_CONFIG" ]; then
     cp "$EXAMPLE_CONFIG" "$CONFIG_FILE"
-    echo "已从示例复制配置文件: $EXAMPLE_CONFIG -> $CONFIG_FILE"
+    echo "Copied config file from example: $EXAMPLE_CONFIG -> $CONFIG_FILE"
   else
     echo '{}' > "$CONFIG_FILE"
-    echo "已创建空配置文件: $CONFIG_FILE（建议从 .openclaw-state.example/openclaw.json 复制完整配置）"
+    echo "Created empty config file: $CONFIG_FILE (It is recommended to copy the full config from .openclaw-state.example/openclaw.json)"
   fi
 fi
 
-# 从配置文件动态读取 token，回退到环境变量
+# Dynamically read token from config file, fallback to environment variable
 GATEWAY_TOKEN=$(jq -r '.gateway.auth.token // empty' "$CONFIG_FILE" 2>/dev/null)
 if [ -z "$GATEWAY_TOKEN" ]; then
   GATEWAY_TOKEN="${OPENCLAW_GATEWAY_TOKEN:-}"
 fi
 
-# ─── 功能函数 ────────────────────────────────────────────────
+# ─── Utility Functions ───────────────────────────────────────
 stop_gateway() {
   if [ -f "$PID_FILE" ]; then
     OLD_PID=$(cat "$PID_FILE")
     if kill -0 "$OLD_PID" 2>/dev/null; then
-      echo "停止旧进程 (PID: $OLD_PID)..."
+      echo "Stopping old process (PID: $OLD_PID)..."
       kill "$OLD_PID" 2>/dev/null
       sleep 1
       if kill -0 "$OLD_PID" 2>/dev/null; then
@@ -126,7 +126,7 @@ stop_gateway() {
 
   PORT_PID=$(port_pid "$PORT")
   if [ -n "$PORT_PID" ]; then
-    echo "停止占用端口 $PORT 的进程 (PID: $PORT_PID)..."
+    echo "Stopping process occupying port $PORT (PID: $PORT_PID)..."
     kill "$PORT_PID" 2>/dev/null
     sleep 1
   fi
@@ -137,30 +137,30 @@ start_gateway() {
   export OPENCLAW_STATE_DIR="$STATE_DIR"
   export OPENCLAW_GATEWAY_PORT="$PORT"
 
-  echo "系统: $OS  |  Node: $($NODE --version 2>/dev/null)"
-  echo "启动 Gateway 服务..."
-  echo "配置文件: $OPENCLAW_CONFIG_PATH"
-  echo "状态目录: $OPENCLAW_STATE_DIR"
-  echo "日志文件: $TMP_LOG"
-  echo "端口: $PORT"
+  echo "OS: $OS  |  Node: $($NODE --version 2>/dev/null)"
+  echo "Starting Gateway service..."
+  echo "Config File: $OPENCLAW_CONFIG_PATH"
+  echo "State Directory: $OPENCLAW_STATE_DIR"
+  echo "Log File: $TMP_LOG"
+  echo "Port: $PORT"
   echo ""
 
   nohup "$NODE" "$SCRIPT_DIR/openclaw.mjs" gateway --port "$PORT" > "$TMP_LOG" 2>&1 &
   GATEWAY_PID=$!
   echo "$GATEWAY_PID" > "$PID_FILE"
 
-  echo "等待 Gateway 就绪..."
+  echo "Waiting for Gateway to be ready..."
   WEBUI_READY=0
   i=0
   while [ $i -lt 30 ]; do
     i=$((i + 1))
     if curl -s -o /dev/null --connect-timeout 1 "http://127.0.0.1:$PORT/" 2>/dev/null; then
-      echo "Gateway 已就绪 (${i}s)"
+      echo "Gateway is ready (${i}s)"
       WEBUI_READY=1
       break
     fi
     if ! kill -0 $GATEWAY_PID 2>/dev/null; then
-      echo "Gateway 进程已退出，启动失败"
+      echo "Gateway process has exited, startup failed"
       cat "$TMP_LOG"
       rm -f "$PID_FILE"
       exit 1
@@ -170,19 +170,19 @@ start_gateway() {
 
   if kill -0 $GATEWAY_PID 2>/dev/null; then
     if [ "$WEBUI_READY" -eq 0 ]; then
-      echo "⚠ curl 检测未成功，Gateway 可能尚未就绪，请稍后手动打开 Web UI"
+      echo "⚠ curl check failed, Gateway might not be ready yet. Please manually open the Web UI later."
     fi
     WEBUI_URL="http://127.0.0.1:$PORT/#token=${GATEWAY_TOKEN}"
-    echo "Gateway 服务已启动 (PID: $GATEWAY_PID)"
+    echo "Gateway service started (PID: $GATEWAY_PID)"
     echo "Web UI: $WEBUI_URL"
     if [ "$WEBUI_READY" -eq 1 ]; then
-      echo "正在打开浏览器..."
+      echo "Opening browser..."
       open_browser "$WEBUI_URL"
     else
-      echo "请手动在浏览器中打开上述地址"
+      echo "Please manually open the above address in your browser"
     fi
   else
-    echo "Gateway 服务启动失败，请查看日志:"
+    echo "Gateway service failed to start, please check logs:"
     cat "$TMP_LOG"
     rm -f "$PID_FILE"
     exit 1
@@ -190,19 +190,19 @@ start_gateway() {
 }
 
 update_cookie() {
-  echo "更新 Claude Web Cookie..."
+  echo "Updating Claude Web Cookie..."
 
   if [ -z "$2" ]; then
-    echo "错误：请提供完整的 cookie 字符串"
-    echo "用法: $0 update-cookie \"完整的cookie字符串\""
+    echo "Error: Please provide the complete cookie string"
+    echo "Usage: $0 update-cookie \"complete cookie string\""
     echo ""
-    echo "从浏览器获取 cookie："
-    echo "1. 打开 https://claude.ai"
-    echo "2. 按 F12 打开开发者工具"
-    echo "3. 切换到 Network 标签"
-    echo "4. 发送一条消息"
-    echo "5. 找到 completion 请求"
-    echo "6. 复制 Request Headers 中的完整 cookie 值"
+    echo "Get cookie from browser:"
+    echo "1. Open https://claude.ai"
+    echo "2. Press F12 to open Developer Tools"
+    echo "3. Switch to the Network tab"
+    echo "4. Send a message"
+    echo "5. Find the completion request"
+    echo "6. Copy the complete cookie value from Request Headers"
     exit 1
   fi
 
@@ -212,7 +212,7 @@ update_cookie() {
   SESSION_KEY=$(echo "$COOKIE_STRING" | grep -oP 'sessionKey=\K[^;]+' || echo "")
 
   if [ -z "$SESSION_KEY" ]; then
-    echo "错误：cookie 中未找到 sessionKey"
+    echo "Error: sessionKey not found in cookie"
     exit 1
   fi
 
@@ -227,18 +227,18 @@ EOF
 
   if [ -f "$AUTH_FILE" ]; then
     jq --arg key "$JSON_DATA" '.profiles["claude-web:default"].key = $key' "$AUTH_FILE" > "$AUTH_FILE.tmp" && mv "$AUTH_FILE.tmp" "$AUTH_FILE"
-    echo "✓ Claude Web cookie 已更新"
+    echo "✓ Claude Web cookie updated"
     echo "✓ SessionKey: ${SESSION_KEY:0:50}..."
     echo ""
-    echo "现在重启服务："
+    echo "Now restart the service:"
     echo "  $0 restart"
   else
-    echo "错误：auth-profiles.json 不存在，请先运行 ./onboard.sh"
+    echo "Error: auth-profiles.json does not exist, please run ./onboard.sh first"
     exit 1
   fi
 }
 
-# ─── 入口 ────────────────────────────────────────────────────
+# ─── Entry Point ─────────────────────────────────────────────
 case "${1:-start}" in
   start)
     stop_gateway
@@ -246,7 +246,7 @@ case "${1:-start}" in
     ;;
   stop)
     stop_gateway
-    echo "Gateway 服务已停止"
+    echo "Gateway service stopped"
     ;;
   restart)
     stop_gateway
@@ -256,17 +256,17 @@ case "${1:-start}" in
     if [ -f "$PID_FILE" ]; then
       PID=$(cat "$PID_FILE")
       if kill -0 "$PID" 2>/dev/null; then
-        echo "Gateway 服务运行中 (PID: $PID)"
+        echo "Gateway service is running (PID: $PID)"
         echo "Web UI: http://127.0.0.1:$PORT/#token=${GATEWAY_TOKEN}"
       else
-        echo "Gateway 服务未运行 (PID 文件存在但进程已退出)"
+        echo "Gateway service is not running (PID file exists but process has exited)"
       fi
     else
       PORT_PID=$(port_pid "$PORT")
       if [ -n "$PORT_PID" ]; then
-        echo "端口 $PORT 被进程 $PORT_PID 占用，但不是本脚本启动的 Gateway"
+        echo "Port $PORT is occupied by process $PORT_PID, but it is not the Gateway started by this script"
       else
-        echo "Gateway 服务未运行"
+        echo "Gateway service is not running"
       fi
     fi
     ;;
@@ -274,16 +274,16 @@ case "${1:-start}" in
     update_cookie "$@"
     ;;
   *)
-    echo "用法: $0 {start|stop|restart|status|update-cookie}"
+    echo "Usage: $0 {start|stop|restart|status|update-cookie}"
     echo ""
-    echo "命令说明："
-    echo "  start         - 启动 Gateway 服务"
-    echo "  stop          - 停止 Gateway 服务"
-    echo "  restart       - 重启 Gateway 服务"
-    echo "  status        - 查看服务状态"
-    echo "  update-cookie - 更新 Claude Web cookie"
+    echo "Command Description:"
+    echo "  start         - Start Gateway service"
+    echo "  stop          - Stop Gateway service"
+    echo "  restart       - Restart Gateway service"
+    echo "  status        - View service status"
+    echo "  update-cookie - Update Claude Web cookie"
     echo ""
-    echo "示例："
+    echo "Examples:"
     echo "  $0 update-cookie \"sessionKey=sk-ant-...; anthropic-device-id=...\""
     exit 1
     ;;
