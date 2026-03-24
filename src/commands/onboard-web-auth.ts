@@ -29,10 +29,7 @@ import type { WizardStep } from "../wizard/types.js";
 import { applyAgentDefaultModelPrimary } from "./onboard-auth.config-shared.js";
 
 // Web model credential saving helper function
-async function saveWebModelCredentials(
-  providerId: string,
-  credentials: unknown
-): Promise<void> {
+async function saveWebModelCredentials(providerId: string, credentials: unknown): Promise<void> {
   const store = ensureAuthProfileStore();
   const profileId = `${providerId}:default`;
 
@@ -109,9 +106,9 @@ async function addModelToWhitelist(providerId: string, modelIds: string[]): Prom
 }
 
 /**
- * 将 agent models.json 中的 providers 同步到 openclaw.json。
- * 解决首次运行时报错的问题：openclaw.json 初始 models.providers 为空，
- * 导致 resolveConfiguredModelRef 默认回退到 anthropic，且 model catalog 无可用 provider。
+ * Synchronize providers from agent models.json to openclaw.json.
+ * Resolves the issue where openclaw.json's initial models.providers is empty on first run,
+ * causing resolveConfiguredModelRef to default to anthropic, and the model catalog has no available provider.
  */
 async function syncModelsProvidersToConfig(): Promise<void> {
   const config = loadConfig();
@@ -144,7 +141,7 @@ async function syncModelsProvidersToConfig(): Promise<void> {
     },
   };
 
-  // 若尚未设置主模型，使用首个 web provider 的首个模型，避免回退到 anthropic
+  // If the primary model is not yet set, use the first model of the first web provider to avoid falling back to anthropic
   if (!resolveAgentModelPrimaryValue(config.agents?.defaults?.model)) {
     const firstEntry = Object.entries(providers).find(
       ([, p]) =>
@@ -158,13 +155,13 @@ async function syncModelsProvidersToConfig(): Promise<void> {
       const firstModel = (provider as { models: { id: string }[] }).models[0];
       if (firstModel?.id) {
         nextConfig = applyAgentDefaultModelPrimary(nextConfig, `${providerId}/${firstModel.id}`);
-        console.log(`  > 已设置默认模型: ${providerId}/${firstModel.id}`);
+        console.log(`  > Set default model: ${providerId}/${firstModel.id}`);
       }
     }
   }
 
   await writeConfigFile(nextConfig);
-  console.log(`  > 已同步 models.providers 到 openclaw.json`);
+  console.log(`  > Synchronized models.providers to openclaw.json`);
 }
 
 // Web model definitions
@@ -258,7 +255,9 @@ export async function runOnboardWebAuth(): Promise<void> {
     return;
   }
 
-  console.log(`\nThe following models will be authorized: ${selectedProviders.map((p) => p.name).join(", ")}`);
+  console.log(
+    `\nThe following models will be authorized: ${selectedProviders.map((p) => p.name).join(", ")}`,
+  );
 
   // List of model IDs corresponding to Web models
   const providerModelIds: Record<string, string[]> = {
@@ -313,7 +312,7 @@ export async function runOnboardWebAuth(): Promise<void> {
   console.log("You can now use these models in the Web UI.");
 }
 
-// 注册为 CLI 命令
+// Register as CLI command
 export const ONBOARD_WEB_AUTH_STEP: WizardStep = {
   title: "Web Model Auth",
   description: "Authorize Web AI models (Claude, ChatGPT, DeepSeek, etc.)",

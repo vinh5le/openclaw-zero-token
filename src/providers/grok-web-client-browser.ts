@@ -108,8 +108,8 @@ export class GrokWebClientBrowser {
   }
 
   /**
-   * DOM 模拟：通过真实浏览器交互发送消息，绕过 403 anti-bot
-   * 参考 ChatGPT Web 的 chatCompletionsViaDOM 实现
+   * DOM simulation: send messages via real browser interaction to bypass 403 anti-bot
+   * Reference ChatGPT Web's chatCompletionsViaDOM implementation
    */
   private async chatCompletionsViaDOM(params: {
     message: string;
@@ -117,74 +117,71 @@ export class GrokWebClientBrowser {
   }): Promise<ReadableStream<Uint8Array>> {
     if (!this.page) throw new Error("GrokWebClientBrowser not initialized");
 
-    const sent = await this.page.evaluate(
-      (msg: string) => {
-        const inputSelectors = [
-          '[contenteditable="true"]',
-          "textarea[placeholder]",
-          "textarea",
-          'div[role="textbox"]',
-          'div[contenteditable="true"]',
-        ];
-        let inputEl: HTMLElement | null = null;
-        for (const sel of inputSelectors) {
-          inputEl = document.querySelector(sel);
-          if (inputEl && inputEl.offsetParent !== null) break;
-        }
-        if (!inputEl) return { ok: false, error: "找不到输入框" };
+    const sent = await this.page.evaluate((msg: string) => {
+      const inputSelectors = [
+        '[contenteditable="true"]',
+        "textarea[placeholder]",
+        "textarea",
+        'div[role="textbox"]',
+        'div[contenteditable="true"]',
+      ];
+      let inputEl: HTMLElement | null = null;
+      for (const sel of inputSelectors) {
+        inputEl = document.querySelector(sel);
+        if (inputEl && inputEl.offsetParent !== null) break;
+      }
+      if (!inputEl) return { ok: false, error: "Cannot find input box" };
 
-        inputEl.focus();
-        if (inputEl.tagName === "TEXTAREA" || (inputEl as HTMLInputElement).tagName === "INPUT") {
-          (inputEl as HTMLTextAreaElement).value = msg;
-          (inputEl as HTMLTextAreaElement).dispatchEvent(new Event("input", { bubbles: true }));
-        } else {
-          (inputEl as HTMLElement).innerText = msg;
-          (inputEl as HTMLElement).dispatchEvent(new Event("input", { bubbles: true }));
-          (inputEl as HTMLElement).dispatchEvent(new Event("change", { bubbles: true }));
-        }
+      inputEl.focus();
+      if (inputEl.tagName === "TEXTAREA" || (inputEl as HTMLInputElement).tagName === "INPUT") {
+        (inputEl as HTMLTextAreaElement).value = msg;
+        (inputEl as HTMLTextAreaElement).dispatchEvent(new Event("input", { bubbles: true }));
+      } else {
+        (inputEl as HTMLElement).innerText = msg;
+        (inputEl as HTMLElement).dispatchEvent(new Event("input", { bubbles: true }));
+        (inputEl as HTMLElement).dispatchEvent(new Event("change", { bubbles: true }));
+      }
 
-        const sendSelectors = [
-          'button[aria-label*="Send"]',
-          'button[aria-label*="send"]',
-          'button[type="submit"]',
-          'button[data-testid*="send"]',
-          "form button[type=submit]",
-          'button:has(svg)',
-          ".send-button",
-          "[class*='send']",
-        ];
-        let sendBtn: HTMLElement | null = null;
-        for (const sel of sendSelectors) {
-          sendBtn = document.querySelector(sel);
-          if (sendBtn && !(sendBtn as HTMLButtonElement).disabled) break;
-        }
-        if (sendBtn) {
-          (sendBtn as HTMLElement).click();
-          return { ok: true };
-        }
-        const textarea = inputEl.closest("form")?.querySelector("button[type=submit]");
-        if (textarea) {
-          (textarea as HTMLElement).click();
-          return { ok: true };
-        }
-        const keyEvent = new KeyboardEvent("keydown", {
-          key: "Enter",
-          code: "Enter",
-          keyCode: 13,
-          which: 13,
-          bubbles: true,
-        });
-        inputEl.dispatchEvent(keyEvent);
+      const sendSelectors = [
+        'button[aria-label*="Send"]',
+        'button[aria-label*="send"]',
+        'button[type="submit"]',
+        'button[data-testid*="send"]',
+        "form button[type=submit]",
+        "button:has(svg)",
+        ".send-button",
+        "[class*='send']",
+      ];
+      let sendBtn: HTMLElement | null = null;
+      for (const sel of sendSelectors) {
+        sendBtn = document.querySelector(sel);
+        if (sendBtn && !(sendBtn as HTMLButtonElement).disabled) break;
+      }
+      if (sendBtn) {
+        (sendBtn as HTMLElement).click();
         return { ok: true };
-      },
-      params.message
-    );
+      }
+      const textarea = inputEl.closest("form")?.querySelector("button[type=submit]");
+      if (textarea) {
+        (textarea as HTMLElement).click();
+        return { ok: true };
+      }
+      const keyEvent = new KeyboardEvent("keydown", {
+        key: "Enter",
+        code: "Enter",
+        keyCode: 13,
+        which: 13,
+        bubbles: true,
+      });
+      inputEl.dispatchEvent(keyEvent);
+      return { ok: true };
+    }, params.message);
 
     if (!sent.ok) {
-      throw new Error(`Grok DOM 模拟失败: ${sent.error}`);
+      throw new Error(`Grok DOM simulation failed: ${sent.error}`);
     }
 
-    console.log("[Grok Web Browser] DOM 模拟已发送，轮询等待回复...");
+    console.log("[Grok Web Browser] DOM simulation sent, polling for reply...");
 
     const maxWaitMs = 90000;
     const pollIntervalMs = 2000;
@@ -193,7 +190,7 @@ export class GrokWebClientBrowser {
     const signal = params.signal;
 
     for (let elapsed = 0; elapsed < maxWaitMs; elapsed += pollIntervalMs) {
-      if (signal?.aborted) throw new Error("Grok 请求已取消");
+      if (signal?.aborted) throw new Error("Grok request cancelled");
 
       await new Promise((r) => setTimeout(r, pollIntervalMs));
 
@@ -236,7 +233,9 @@ export class GrokWebClientBrowser {
         return { text, isStreaming };
       });
 
-      console.log(`[Grok Browser] Poll ${elapsed}: textLen=${result.text?.length || 0}, isStreaming=${result.isStreaming}, stableCount=${stableCount}`);
+      console.log(
+        `[Grok Browser] Poll ${elapsed}: textLen=${result.text?.length || 0}, isStreaming=${result.isStreaming}, stableCount=${stableCount}`,
+      );
 
       if (result.text && result.text !== lastText) {
         lastText = result.text;
@@ -256,7 +255,7 @@ export class GrokWebClientBrowser {
 
     if (!lastText) {
       throw new Error(
-        "Grok DOM 模拟：未检测到回复。请确保 grok.com 页面已打开、已登录，且输入框可见。"
+        "Grok DOM simulation: No reply detected. Please ensure grok.com is open, logged in, and input box is visible.",
       );
     }
 
@@ -283,7 +282,7 @@ export class GrokWebClientBrowser {
 
     const { conversationId, parentResponseId, message, model } = params;
     console.log(
-      `[Grok Web Browser] Sending request... conversationId=${conversationId ?? "(将从页面或 API 获取)"} messageLen=${message.length}`
+      `[Grok Web Browser] Sending request... conversationId=${conversationId ?? "(will fetch from page or API)"} messageLen=${message.length}`,
     );
 
     const evalPromise = this.page.evaluate(
@@ -320,9 +319,9 @@ export class GrokWebClientBrowser {
           }
         }
 
-        // 如果没有现有对话，创建一个新对话
+        // If there's no existing conversation, create a new one
         if (!convId) {
-          console.log("[Grok] 没有现有对话，创建新对话...");
+          console.log("[Grok] No existing conversation, creating new one...");
           const createRes = await fetch("https://grok.com/rest/app-chat/conversations", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -333,20 +332,21 @@ export class GrokWebClientBrowser {
             const createData = await createRes.json();
             convId = createData?.conversationId ?? createData?.id ?? null;
             if (convId) {
-              console.log(`[Grok] 新对话创建成功: ${convId}`);
+              console.log(`[Grok] New conversation created successfully: ${convId}`);
             }
           }
         }
 
         if (!convId) {
           throw new Error(
-            `需要 conversationId。当前页面: ${window.location.href}。请先在 grok.com 中打开或新建一个对话（点击 New chat），再重试。`
+            `conversationId required. Current page: ${window.location.href}. Please open or create a new conversation in grok.com (click New chat) and try again.`,
           );
         }
 
         const body: Record<string, unknown> = {
           message,
-          parentResponseId: parentId ?? globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2),
+          parentResponseId:
+            parentId ?? globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2),
           disableSearch: false,
           enableImageGeneration: true,
           imageAttachments: [],
@@ -388,13 +388,13 @@ export class GrokWebClientBrowser {
             headers: { "Content-Type": "application/json" },
             credentials: "include",
             body: JSON.stringify(body),
-          }
+          },
         );
 
         if (!response.ok) {
           const errText = await response.text();
           throw new Error(
-            `Grok API error: ${response.status} ${response.statusText} - ${errText.slice(0, 300)}`
+            `Grok API error: ${response.status} ${response.statusText} - ${errText.slice(0, 300)}`,
           );
         }
 
@@ -418,15 +418,20 @@ export class GrokWebClientBrowser {
       evalPromise,
       new Promise<never>((_, reject) =>
         setTimeout(
-          () => reject(new Error(`Grok 请求超时（${timeoutMs / 1000}秒）。请确保 grok.com 已登录且页面可访问。`)),
-          timeoutMs
-        )
+          () =>
+            reject(
+              new Error(
+                `Grok request timeout (${timeoutMs / 1000}s). Please ensure grok.com is logged in and accessible.`,
+              ),
+            ),
+          timeoutMs,
+        ),
       ),
     ]).catch((err) => {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes("403") || msg.includes("anti-bot")) {
         console.log(
-          "[Grok Web Browser] 403 anti-bot 触发，切换到 DOM 模拟（由真实浏览器交互发起，不易触发风控）"
+          "[Grok Web Browser] 403 anti-bot triggered, switching to DOM simulation (initiated by real browser interaction, less likely to trigger risk control)",
         );
         return this.chatCompletionsViaDOM({
           message: params.message,
@@ -446,7 +451,7 @@ export class GrokWebClientBrowser {
     const fullText = new TextDecoder().decode(new Uint8Array(fullBytes));
     console.log(`[Grok Web Browser] Response length: ${fullBytes.length} bytes`);
     console.log(
-      `[Grok Web Browser] NDJSON sample:\n${fullText.slice(0, 1200)}${fullText.length > 1200 ? "\n...(truncated)" : ""}`
+      `[Grok Web Browser] NDJSON sample:\n${fullText.slice(0, 1200)}${fullText.length > 1200 ? "\n...(truncated)" : ""}`,
     );
 
     // Parse NDJSON lines and extract content
@@ -455,7 +460,8 @@ export class GrokWebClientBrowser {
     for (const line of lines) {
       try {
         const data = JSON.parse(line);
-        const content = data.contentDelta ?? data.textDelta ?? data.content ?? data.text ?? data.delta;
+        const content =
+          data.contentDelta ?? data.textDelta ?? data.content ?? data.text ?? data.delta;
         if (content) {
           parsedChunks.push(content);
         }

@@ -43,25 +43,24 @@ import {
   listChannelSupportedActions,
   resolveChannelMessageToolHints,
 } from "../../channel-tools.js";
+import { createChatGPTWebStreamFn } from "../../chatgpt-web-stream.js";
+import { createClaudeWebStreamFn } from "../../claude-web-stream.js";
 import { ensureCustomApiRegistered } from "../../custom-api-registry.js";
+import { createDeepseekWebStreamFn } from "../../deepseek-web-stream.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../defaults.js";
 import { resolveOpenClawDocsPath } from "../../docs-path.js";
+import { createDoubaoWebStreamFn } from "../../doubao-web-stream.js";
 import { isTimeoutError } from "../../failover-error.js";
+import { createGeminiWebStreamFn } from "../../gemini-web-stream.js";
+import { createGlmIntlWebStreamFn } from "../../glm-intl-web-stream.js";
+import { createGlmWebStreamFn } from "../../glm-web-stream.js";
+import { createGrokWebStreamFn } from "../../grok-web-stream.js";
 import { resolveImageSanitizationLimits } from "../../image-sanitization.js";
+import { createKimiWebStreamFn } from "../../kimi-web-stream.js";
 import { resolveModelAuthMode } from "../../model-auth.js";
 import { normalizeProviderId, resolveDefaultModelForAgent } from "../../model-selection.js";
 import { supportsModelTools } from "../../model-tool-support.js";
 import { createConfiguredOllamaStreamFn } from "../../ollama-stream.js";
-import { createDeepseekWebStreamFn } from "../../deepseek-web-stream.js";
-import { createClaudeWebStreamFn } from "../../claude-web-stream.js";
-import { createDoubaoWebStreamFn } from "../../doubao-web-stream.js";
-import { createChatGPTWebStreamFn } from "../../chatgpt-web-stream.js";
-import { createQwenWebStreamFn } from "../../qwen-web-stream.js";
-import { createKimiWebStreamFn } from "../../kimi-web-stream.js";
-import { createGeminiWebStreamFn } from "../../gemini-web-stream.js";
-import { createGrokWebStreamFn } from "../../grok-web-stream.js";
-import { createGlmWebStreamFn } from "../../glm-web-stream.js";
-import { createGlmIntlWebStreamFn } from "../../glm-intl-web-stream.js";
 import { createOpenAIWebSocketStreamFn, releaseWsSession } from "../../openai-ws-stream.js";
 import { resolveOwnerDisplaySetting } from "../../owner-display.js";
 import {
@@ -78,6 +77,7 @@ import { createPreparedEmbeddedPiSettingsManager } from "../../pi-project-settin
 import { applyPiAutoCompactionGuard } from "../../pi-settings.js";
 import { toClientToolDefinitions } from "../../pi-tool-definition-adapter.js";
 import { createOpenClawCodingTools, resolveToolLoopDetectionConfig } from "../../pi-tools.js";
+import { createQwenWebStreamFn } from "../../qwen-web-stream.js";
 import { resolveSandboxContext } from "../../sandbox.js";
 import { resolveSandboxRuntimeStatus } from "../../sandbox/runtime-status.js";
 import { isXaiProvider } from "../../schema/clean-for-xai.js";

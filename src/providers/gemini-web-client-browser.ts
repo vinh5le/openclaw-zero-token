@@ -114,73 +114,76 @@ export class GeminiWebClientBrowser {
   }): Promise<ReadableStream<Uint8Array>> {
     if (!this.page) throw new Error("GeminiWebClientBrowser not initialized");
 
-    const sent = await this.page.evaluate(
-      (msg: string) => {
-        // Input box: Priority match Gemini placeholders, then generic selectors (reference Scrapling multi-strategy)
-        const inputSelectors = [
-          '[placeholder*="Gemini"]',
-          '[placeholder*="Ask"]',
-          '[data-placeholder*="Gemini"]',
-          '[contenteditable="true"]',
-          'div[role="textbox"]',
-          "textarea",
-          '[aria-label*="message"]',
-          '[aria-label*="prompt"]',
-        ];
-        let inputEl: HTMLElement | null = null;
-        for (const sel of inputSelectors) {
-          const el = document.querySelector(sel);
-          if (el && (el as HTMLElement).offsetParent !== null) {
-            inputEl = el as HTMLElement;
-            break;
-          }
+    const sent = await this.page.evaluate((msg: string) => {
+      // Input box: Priority match Gemini placeholders, then generic selectors (reference Scrapling multi-strategy)
+      const inputSelectors = [
+        '[placeholder*="Gemini"]',
+        '[placeholder*="Ask"]',
+        '[data-placeholder*="Gemini"]',
+        '[contenteditable="true"]',
+        'div[role="textbox"]',
+        "textarea",
+        '[aria-label*="message"]',
+        '[aria-label*="prompt"]',
+      ];
+      let inputEl: HTMLElement | null = null;
+      for (const sel of inputSelectors) {
+        const el = document.querySelector(sel);
+        if (el && (el as HTMLElement).offsetParent !== null) {
+          inputEl = el as HTMLElement;
+          break;
         }
-        if (!inputEl) return { ok: false, error: "Input box not found" };
+      }
+      if (!inputEl) return { ok: false, error: "Input box not found" };
 
-        inputEl.focus();
-        if (inputEl.tagName === "TEXTAREA" || (inputEl as HTMLInputElement).tagName === "INPUT") {
-          (inputEl as HTMLTextAreaElement).value = msg;
-          (inputEl as HTMLTextAreaElement).dispatchEvent(new Event("input", { bubbles: true }));
-        } else {
-          (inputEl as HTMLElement).innerText = msg;
-          (inputEl as HTMLElement).dispatchEvent(new Event("input", { bubbles: true }));
-          (inputEl as HTMLElement).dispatchEvent(new Event("change", { bubbles: true }));
-        }
+      inputEl.focus();
+      if (inputEl.tagName === "TEXTAREA" || (inputEl as HTMLInputElement).tagName === "INPUT") {
+        (inputEl as HTMLTextAreaElement).value = msg;
+        (inputEl as HTMLTextAreaElement).dispatchEvent(new Event("input", { bubbles: true }));
+      } else {
+        (inputEl as HTMLElement).innerText = msg;
+        (inputEl as HTMLElement).dispatchEvent(new Event("input", { bubbles: true }));
+        (inputEl as HTMLElement).dispatchEvent(new Event("change", { bubbles: true }));
+      }
 
-        const sendSelectors = [
-          'button[aria-label*="Send"]',
-          'button[aria-label*="send"]',
-          'button[aria-label*="Submit"]',
-          'button[aria-label*="Send"]',
-          'button[type="submit"]',
-          'button[data-icon="send"]',
-          'button[data-testid*="send"]',
-          "form button[type=submit]",
-          'button[class*="send"]',
-          '[aria-label*="Send message"]',
-          '.send-button',
-        ];
-        let sendBtn: HTMLElement | null = null;
-        for (const sel of sendSelectors) {
-          sendBtn = document.querySelector(sel);
-          if (sendBtn && !(sendBtn as HTMLButtonElement).disabled) break;
-        }
-        if (sendBtn) {
-          (sendBtn as HTMLElement).click();
-          return { ok: true };
-        }
-        const formSubmit = inputEl.closest("form")?.querySelector("button[type=submit]");
-        if (formSubmit) {
-          (formSubmit as HTMLElement).click();
-          return { ok: true };
-        }
-        inputEl.dispatchEvent(
-          new KeyboardEvent("keydown", { key: "Enter", code: "Enter", keyCode: 13, which: 13, bubbles: true })
-        );
+      const sendSelectors = [
+        'button[aria-label*="Send"]',
+        'button[aria-label*="send"]',
+        'button[aria-label*="Submit"]',
+        'button[aria-label*="Send"]',
+        'button[type="submit"]',
+        'button[data-icon="send"]',
+        'button[data-testid*="send"]',
+        "form button[type=submit]",
+        'button[class*="send"]',
+        '[aria-label*="Send message"]',
+        ".send-button",
+      ];
+      let sendBtn: HTMLElement | null = null;
+      for (const sel of sendSelectors) {
+        sendBtn = document.querySelector(sel);
+        if (sendBtn && !(sendBtn as HTMLButtonElement).disabled) break;
+      }
+      if (sendBtn) {
+        (sendBtn as HTMLElement).click();
         return { ok: true };
-      },
-      params.message
-    );
+      }
+      const formSubmit = inputEl.closest("form")?.querySelector("button[type=submit]");
+      if (formSubmit) {
+        (formSubmit as HTMLElement).click();
+        return { ok: true };
+      }
+      inputEl.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Enter",
+          code: "Enter",
+          keyCode: 13,
+          which: 13,
+          bubbles: true,
+        }),
+      );
+      return { ok: true };
+    }, params.message);
 
     if (!sent.ok) {
       throw new Error(`Gemini DOM Simulation failed: ${sent.error}`);
@@ -224,16 +227,21 @@ export class GeminiWebClientBrowser {
           (t.includes("Hello") && (t.includes("need") || t.includes("do for you"))) ||
           /^What can I do for you/i.test(t);
         const isSkip = (t: string) =>
-          skipTexts.some((s) => t.includes(s)) ||
-          isGreeting(t) ||
-          t.length < 20;
+          skipTexts.some((s) => t.includes(s)) || isGreeting(t) || t.length < 20;
 
-        const sidebarRoot = document.querySelector('[aria-label*="Conversation"], [class*="sidebar"], nav');
+        const sidebarRoot = document.querySelector(
+          '[aria-label*="Conversation"], [class*="sidebar"], nav',
+        );
         const notInSidebar = (el: Element) => !sidebarRoot?.contains(el);
 
         // Exclude input area: input box and its parent container (including suggestion buttons)
-        const inputEl = document.querySelector('[contenteditable="true"], textarea, [placeholder*="Gemini"], [placeholder*="Ask"]');
-        const inputRoot = inputEl?.closest("form") ?? inputEl?.closest("[class*='input']") ?? inputEl?.parentElement?.parentElement;
+        const inputEl = document.querySelector(
+          '[contenteditable="true"], textarea, [placeholder*="Gemini"], [placeholder*="Ask"]',
+        );
+        const inputRoot =
+          inputEl?.closest("form") ??
+          inputEl?.closest("[class*='input']") ??
+          inputEl?.parentElement?.parentElement;
         const notInInputArea = (el: Element) => !inputRoot?.contains(el);
 
         const main =
@@ -291,7 +299,9 @@ export class GeminiWebClientBrowser {
       // Ignore contents that are too short (<40 chars are mostly greetings/buttons)
       const minLen = 40;
       if (result.text && result.text.length < minLen && result.text.length > 0) {
-        console.log(`[Gemini Web Browser] Ignoring content that is too short (${result.text.length} chars): ${result.text.slice(0, 50)}...`);
+        console.log(
+          `[Gemini Web Browser] Ignoring content that is too short (${result.text.length} chars): ${result.text.slice(0, 50)}...`,
+        );
       }
       if (result.text && result.text.length >= minLen) {
         if (result.text !== lastText) {
@@ -308,11 +318,11 @@ export class GeminiWebClientBrowser {
 
     if (!lastText) {
       throw new Error(
-        "Gemini DOM Simulation: No response detected. Please ensure gemini.google.com page is open, logged in, and the input box is visible."
+        "Gemini DOM Simulation: No response detected. Please ensure gemini.google.com page is open, logged in, and the input box is visible.",
       );
     }
 
-    // 输出 gemini-web-stream 可解析的 data: 格式
+    // Output data: format parseable by gemini-web-stream
     const sseLine = `data: ${JSON.stringify({ text: lastText })}\n`;
     const encoder = new TextEncoder();
     return new ReadableStream<Uint8Array>({

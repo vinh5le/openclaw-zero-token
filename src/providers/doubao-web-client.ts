@@ -129,7 +129,7 @@ export class DoubaoWebClient {
     };
 
     // Debug logs
-    console.log(`[DoubaoWebClient] Config keys: ${Object.keys(this.config).join(', ')}`);
+    console.log(`[DoubaoWebClient] Config keys: ${Object.keys(this.config).join(", ")}`);
     console.log(`[DoubaoWebClient] fp in config: ${this.config.fp}`);
     console.log(`[DoubaoWebClient] tea_uuid in config: ${this.config.tea_uuid}`);
     console.log(`[DoubaoWebClient] device_id in config: ${this.config.device_id}`);
@@ -139,13 +139,15 @@ export class DoubaoWebClient {
   private getHeaders(): Record<string, string> {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "Accept": "text/event-stream",
-      "User-Agent": this.auth.userAgent || "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      "Referer": "https://www.doubao.com/chat/",
-      "Origin": "https://www.doubao.com",
+      Accept: "text/event-stream",
+      "User-Agent":
+        this.auth.userAgent ||
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      Referer: "https://www.doubao.com/chat/",
+      Origin: "https://www.doubao.com",
       "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
       "Accept-Encoding": "gzip, deflate, br",
-      "Connection": "keep-alive",
+      Connection: "keep-alive",
       "Sec-Fetch-Dest": "empty",
       "Sec-Fetch-Mode": "cors",
       "Sec-Fetch-Site": "same-origin",
@@ -165,20 +167,20 @@ export class DoubaoWebClient {
 
   private buildQueryParams(): string {
     const params = new URLSearchParams();
-    
+
     // Add static parameters
     Object.entries(this.config).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && key !== 'msToken' && key !== 'a_bogus') {
+      if (value !== undefined && value !== null && key !== "msToken" && key !== "a_bogus") {
         params.append(key, value.toString());
       }
     });
 
     // Add dynamic parameters (if any)
     if (this.config.msToken) {
-      params.append('msToken', this.config.msToken);
+      params.append("msToken", this.config.msToken);
     }
     if (this.config.a_bogus) {
-      params.append('a_bogus', this.config.a_bogus);
+      params.append("a_bogus", this.config.a_bogus);
     }
 
     return params.toString();
@@ -218,12 +220,14 @@ export class DoubaoWebClient {
 
   /** Merge multi-turn messages into a single content (plain text) required by the samantha interface */
   private mergeMessagesForSamantha(messages: DoubaoMessage[]): string {
-    return messages
-      .map(m => {
-        const role = m.role === "user" ? "user" : m.role === "assistant" ? "assistant" : "system";
-        return `<|im_start|>${role}\n${m.content}\n`;
-      })
-      .join("") + "<|im_end|>\n";
+    return (
+      messages
+        .map((m) => {
+          const role = m.role === "user" ? "user" : m.role === "assistant" ? "assistant" : "system";
+          return `<|im_start|>${role}\n${m.content}\n`;
+        })
+        .join("") + "<|im_end|>\n"
+    );
   }
 
   async chatCompletions(
@@ -269,8 +273,13 @@ export class DoubaoWebClient {
           bot_id: "7338286299411103781",
         },
         ext: { use_deep_think: "0", fp: this.config.fp || "" },
-        messages: request.messages.map(msg => ({ role: msg.role, content: msg.content })),
-        option: { send_message_scene: "", create_time_ms: Date.now(), collect_id: "", is_audio: false },
+        messages: request.messages.map((msg) => ({ role: msg.role, content: msg.content })),
+        option: {
+          send_message_scene: "",
+          create_time_ms: Date.now(),
+          collect_id: "",
+          is_audio: false,
+        },
       });
     }
 
@@ -310,7 +319,7 @@ export class DoubaoWebClient {
 
   private async handleStreamResponse(
     response: Response,
-    onChunk: (chunk: string) => void
+    onChunk: (chunk: string) => void,
   ): Promise<DoubaoChatResponse> {
     const reader = response.body?.getReader();
     if (!reader) {
@@ -320,7 +329,7 @@ export class DoubaoWebClient {
     const decoder = new TextDecoder();
     let buffer = "";
     let fullContent = "";
-    
+
     // SSE parsing state
     let currentEvent: { id?: string; event?: string; data?: string } = {};
 
@@ -397,13 +406,13 @@ export class DoubaoWebClient {
   private async processSSEEvent(
     event: { id?: string; event?: string; data?: string },
     onChunk: (chunk: string) => void,
-    onContent: (chunk: string) => void
+    onContent: (chunk: string) => void,
   ): Promise<void> {
     if (!event.event || !event.data) return;
 
     try {
       const data = JSON.parse(event.data);
-      
+
       switch (event.event) {
         case "CHUNK_DELTA":
           if (data.text) {
@@ -411,7 +420,7 @@ export class DoubaoWebClient {
             onContent(data.text);
           }
           break;
-          
+
         case "STREAM_CHUNK":
           if (data.patch_op) {
             for (const patch of data.patch_op) {
@@ -422,19 +431,19 @@ export class DoubaoWebClient {
             }
           }
           break;
-          
+
         case "SSE_REPLY_END":
           console.log(`✅ Streaming response complete`);
           break;
-          
+
         case "SSE_HEARTBEAT":
           // Heartbeat packet, ignore
           break;
-          
+
         case "SSE_ACK":
           // Acknowledgement packet, ignore
           break;
-          
+
         case "STREAM_MSG_NOTIFY":
           // Message notification, may contain initial content
           if (data.content?.content_block) {
@@ -446,12 +455,14 @@ export class DoubaoWebClient {
             }
           }
           break;
-          
+
         case "STREAM_ERROR":
           // Handle streaming errors, especially rate limiting
           console.error(`❌ Doubao streaming error:`, data);
           if (data.error_code === 710022004) {
-            throw new Error(`Doubao Rate Limit: ${data.error_msg} (error code: ${data.error_code})`);
+            throw new Error(
+              `Doubao Rate Limit: ${data.error_msg} (error code: ${data.error_code})`,
+            );
           } else {
             throw new Error(`Doubao API Error: ${data.error_msg} (error code: ${data.error_code})`);
           }
@@ -459,7 +470,9 @@ export class DoubaoWebClient {
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.warn(`⚠️ Failed to parse SSE data: ${errorMessage}, Event: ${event.event}, Data: ${event.data?.substring(0, 100)}`);
+      console.warn(
+        `⚠️ Failed to parse SSE data: ${errorMessage}, Event: ${event.event}, Data: ${event.data?.substring(0, 100)}`,
+      );
     }
   }
 
@@ -471,8 +484,8 @@ export class DoubaoWebClient {
   }
 
   /**
-   * 豆包 samantha API 响应格式：每行 JSON 含 event_type、event_data。
-   * event_type 2001=数据块，event_data 为 JSON 字符串，内有 message.content（再解析得 {text}）；2003=结束。
+   * Doubao samantha API response format: each line is JSON with event_type, event_data.
+   * event_type 2001=data chunk, event_data is JSON string containing message.content (parsed to {text}); 2003=end.
    */
   private extractTextFromSamanthaLine(line: string): string[] {
     const chunks: string[] = [];
@@ -488,7 +501,13 @@ export class DoubaoWebClient {
       if (result.is_finish) return chunks;
       const message = result.message;
       const contentType = message?.content_type;
-      if (!message || contentType === undefined || ![2001, 2008].includes(contentType) || !message.content) return chunks;
+      if (
+        !message ||
+        contentType === undefined ||
+        ![2001, 2008].includes(contentType) ||
+        !message.content
+      )
+        return chunks;
       const content = JSON.parse(message.content) as { text?: string };
       if (content.text) chunks.push(content.text);
     } catch {
@@ -584,28 +603,31 @@ export class DoubaoWebClient {
     }
 
     if (eventCount > 0 && textEventCount === 0) {
-      const msg =
-        `[DoubaoWebClient] Received ${eventCount} SSE events but parsed no text, Doubao API format might have changed. Please check if authentication (sessionid/cookie) is valid, or check console debug output.`;
+      const msg = `[DoubaoWebClient] Received ${eventCount} SSE events but parsed no text, Doubao API format might have changed. Please check if authentication (sessionid/cookie) is valid, or check console debug output.`;
       console.warn(msg);
       throw new Error(msg);
     }
   }
 
-  private async extractTextFromEvent(event: { id?: string; event?: string; data?: string }): Promise<string[]> {
+  private async extractTextFromEvent(event: {
+    id?: string;
+    event?: string;
+    data?: string;
+  }): Promise<string[]> {
     const chunks: string[] = [];
-    
+
     if (!event.event || !event.data) return chunks;
 
     try {
       const data = JSON.parse(event.data);
-      
+
       switch (event.event) {
         case "CHUNK_DELTA":
           if (data.text) {
             chunks.push(data.text);
           }
           break;
-          
+
         case "STREAM_CHUNK":
           if (data.patch_op) {
             for (const patch of data.patch_op) {
@@ -615,7 +637,7 @@ export class DoubaoWebClient {
             }
           }
           break;
-          
+
         case "STREAM_MSG_NOTIFY":
           if (data.content?.content_block) {
             for (const block of data.content.content_block) {
@@ -640,13 +662,13 @@ export class DoubaoWebClient {
     } catch (error) {
       // Ignore parsing errors
     }
-    
+
     return chunks;
   }
 
   private async parseNonStreamResponse(response: Response): Promise<DoubaoChatResponse> {
     const text = await response.text();
-    
+
     // Try to parse as SSE format
     const lines = text.split("\n");
     let fullContent = "";
@@ -658,10 +680,10 @@ export class DoubaoWebClient {
         const match = line.match(/id: (\d+) event: (\w+) data: (.+)/);
         if (match) {
           const [, , event, dataStr] = match;
-          
+
           try {
             const data = JSON.parse(dataStr);
-            
+
             if (event === "CHUNK_DELTA" && data.text) {
               fullContent += data.text;
             } else if (event === "STREAM_CHUNK" && data.patch_op) {

@@ -35,7 +35,7 @@ export function createPerplexityWebStreamFn(cookieOrJson: string): StreamFn {
 
         const messages = context.messages || [];
         const systemPrompt = (context as unknown as { systemPrompt?: string }).systemPrompt || "";
-        
+
         const historyParts: string[] = [];
         if (systemPrompt && !messages.some((m) => (m.role as string) === "system")) {
           historyParts.push(`System: ${systemPrompt}`);
@@ -64,7 +64,7 @@ export function createPerplexityWebStreamFn(cookieOrJson: string): StreamFn {
           }
           historyParts.push(`${role}: ${content}`);
         }
-        
+
         const prompt = historyParts.join("\n\n");
         if (!prompt) throw new Error("No message found to send to Perplexity API");
 
@@ -90,7 +90,14 @@ export function createPerplexityWebStreamFn(cookieOrJson: string): StreamFn {
           api: model.api,
           provider: model.provider,
           model: model.id,
-          usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+          usage: {
+            input: 0,
+            output: 0,
+            cacheRead: 0,
+            cacheWrite: 0,
+            totalTokens: 0,
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+          },
           stopReason: "stop",
           timestamp: Date.now(),
         });
@@ -103,12 +110,12 @@ export function createPerplexityWebStreamFn(cookieOrJson: string): StreamFn {
             const data = JSON.parse(dataStr);
             const delta = data.text || data.content || data.delta;
             if (typeof delta === "string" && delta) {
-               if (contentParts.length === 0) {
-                 contentParts[0] = { type: "text", text: "" };
-                 stream.push({ type: "text_start", contentIndex: 0, partial: createPartial() });
-               }
-               (contentParts[0] as TextContent).text += delta;
-               stream.push({ type: "text_delta", contentIndex: 0, delta, partial: createPartial() });
+              if (contentParts.length === 0) {
+                contentParts[0] = { type: "text", text: "" };
+                stream.push({ type: "text_start", contentIndex: 0, partial: createPartial() });
+              }
+              (contentParts[0] as TextContent).text += delta;
+              stream.push({ type: "text_delta", contentIndex: 0, delta, partial: createPartial() });
             }
           } catch {
             // ignore
@@ -137,7 +144,14 @@ export function createPerplexityWebStreamFn(cookieOrJson: string): StreamFn {
           api: model.api,
           provider: model.provider,
           model: model.id,
-          usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+          usage: {
+            input: 0,
+            output: 0,
+            cacheRead: 0,
+            cacheWrite: 0,
+            totalTokens: 0,
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+          },
           timestamp: Date.now(),
         };
 
@@ -154,7 +168,14 @@ export function createPerplexityWebStreamFn(cookieOrJson: string): StreamFn {
             api: model.api,
             provider: model.provider,
             model: model.id,
-            usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+            usage: {
+              input: 0,
+              output: 0,
+              cacheRead: 0,
+              cacheWrite: 0,
+              totalTokens: 0,
+              cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+            },
             timestamp: Date.now(),
           },
         } as any);
