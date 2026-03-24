@@ -1,132 +1,132 @@
-# 测试步骤（完整版）
+# Testing Steps (Complete Guide)
 
-## 🎯 配置步骤
+## 🎯 Configuration Steps
 
-### 步骤 1：编译
+### Step 1: Build
 
-**目的**：编译 TypeScript 代码为可执行的 JavaScript
+**Purpose**: Compile TypeScript code into executable JavaScript
 
 ```bash
 npm install
 npm run build
 ```
 
-**验证**：
+**Verification**:
 
 ```bash
 ls dist/index.mjs
-# 应该看到编译后的文件
+# You should see the compiled file
 ```
 
-**注意**：如果修改了源代码，需要重新编译
+**Note**: If you modify the source code, you must recompile
 
 ---
 
-### 步骤 2：打开浏览器调试
+### Step 2: Open Browser Debugging
 
-**目的**：提供浏览器环境（端口 9222）
+**Purpose**: Provide a browser environment (Port 9222)
 
 ```bash
 ./start-chrome-debug.sh
 ```
 
-**验证**：
+**Verification**:
 
 ```bash
 ps aux | grep "chrome.*9222" | grep -v grep
-# 应该看到 Chrome 进程
+# You should see the Chrome process
 ```
 
 ---
 
-### 步骤 3：登录各大网站（不含 DeepSeek）
+### Step 3: Log in to major websites (excluding DeepSeek)
 
-**目的**：在 Chrome 调试浏览器中建立登录会话
+**Purpose**: Establish login sessions in the Chrome debugging browser
 
-**重要**：必须在 `start-chrome-debug` 启动的 Chrome 中登录（不是普通浏览器）。**DeepSeek 在第 5 步单独处理**
+**Important**: You must log in using the Chrome browser started by `start-chrome-debug` (not your normal browser). **DeepSeek is handled separately in Step 5**
 
-在 Chrome 中打开并登录以下平台：
+Open and log in to the following platforms in Chrome:
 
-1. **千问国际版 (Qwen International)**: https://chat.qwen.ai
-2. **千问国内版 (Qwen CN)**: https://www.qianwen.com
+1. **Qwen International**: https://chat.qwen.ai
+2. **Qwen CN**: https://www.qianwen.com
 3. **Kimi**: https://kimi.moonshot.cn
 4. **Claude**: https://claude.ai
 5. **Doubao**: https://www.doubao.com/chat/
 6. **ChatGPT**: https://chatgpt.com
 7. **Gemini**: https://gemini.google.com/app
 8. **Grok**: https://grok.com
-9. **GLM Web (智谱清言)**: https://chatglm.cn
-10. **GLM 国际版**: https://chat.z.ai
+9. **GLM Web (Zhipu)**: https://chatglm.cn
+10. **GLM International**: https://chat.z.ai
 
-**注意**：Manus 使用 API Key 方式认证，不需要浏览器登录。API Key 获取地址：https://open.manus.im
+**Note**: Manus uses API Key authentication, no browser login required. API Key retrieval address: https://open.manus.im
 
 ---
 
-### 步骤 4：配置 onboard
+### Step 4: Configure Onboard
 
-**目的**：为各平台配置认证信息
+**Purpose**: Configure authentication information for each platform
 
 ```bash
 ./onboard.sh webauth
 ```
 
-**操作**：选择平台（如 `deepseek-web`），按提示完成认证
+**Action**: Select the platform (e.g., `deepseek-web`), follow prompts to complete authentication
 
 ---
 
-### 步骤 5：登录 DeepSeek
+### Step 5: Log in to DeepSeek
 
-**目的**：在 Chrome 中登录 DeepSeek，并通过 onboard 捕获认证
+**Purpose**: Log in to DeepSeek in Chrome, and capture authentication via onboard
 
-1. 在 Chrome 中访问 https://chat.deepseek.com 并登录
-2. 运行 `./onboard.sh webauth`，选择 **deepseek-web** 完成凭证捕获
+1. Visit https://chat.deepseek.com in Chrome and log in
+2. Run `./onboard.sh webauth`, select **deepseek-web** to complete credential capture
 
 ---
 
-### 步骤 6：启动 server
+### Step 6: Start Server
 
-**目的**：启动 Web UI 服务（端口 3001）
+**Purpose**: Start the Web UI service (Port 3001)
 
 ```bash
 ./server.sh start
 ```
 
-**验证**：
+**Verification**:
 
 ```bash
 ./server.sh status
-# 应该显示：Gateway 服务运行中
+# It should display: Gateway server is running
 ```
 
 ---
 
-### 访问 Web UI
+### Access Web UI
 
-**访问地址**：
+**Access Address**:
 
 ```
 http://127.0.0.1:3001/#token=62b791625fa441be036acd3c206b7e14e2bb13c803355823
 ```
 
-浏览器应该会自动打开，如果没有，手动访问上面的地址。
+The browser should open automatically. If not, manually visit the address above.
 
 ---
 
-### 步骤 7：查看所有模型
+### Step 7: View all models
 
-**关键规则（请务必注意）**：
+**Key Rules (Please read carefully)**:
 
-- `/models` 里显示的是**已完成 onboard 配置**的平台模型集合。
-- 只有你在 `./onboard.sh webauth` 中实际选择并完成认证的平台，才会写入 `openclaw.json` 并出现在最终模型列表中。
-- 仅在浏览器里登录、但没有走完 onboard 的平台，**不会**出现在 `/models`。
+- `/models` displays the collection of platforms and models that have **completed onboard configuration**.
+- Only platforms you actually selected and completed authentication for in `./onboard.sh webauth` will be written to `openclaw.json` and appear in the final models list.
+- Platforms you only logged into via browser but haven't finished onboard for **will not** appear in `/models`.
 
-在 Web UI 的聊天框中输入：
+Type in the Web UI chat box:
 
 ```
 /models
 ```
 
-**预期结果**：应该看到以下模型
+**Expected Result**: You should see the following models
 
 ```
 claude-web/claude-sonnet-4-6
@@ -155,15 +155,15 @@ manus-api/manus-1.6-lite
 
 ---
 
-### 步骤 8：测试对话
+### Step 8: Test Conversation
 
-**操作**：
+**Action**:
 
-1. 在 Web UI 中选择一个模型（如 `claude-web/claude-sonnet-4-6`）
-2. 发送测试消息："你好，请介绍一下你自己"
-3. 检查是否能正常收到回复
+1. Select a model in the Web UI (e.g., `claude-web/claude-sonnet-4-6`)
+2. Send a test message: "Hello, please introduce yourself"
+3. Verify if you receive an appropriate response
 
-**对每个平台重复测试**：
+**Repeat the test for each platform**:
 
 - ✅ claude-web
 - ✅ doubao-web
@@ -174,195 +174,195 @@ manus-api/manus-1.6-lite
 - ✅ grok-web
 - ✅ deepseek-web
 - ✅ glm-web (GLM)
-- ✅ manus-api (需要 API Key)
+- ✅ manus-api (Requires API Key)
 
 ---
 
-## 📊 配置流程图
+## 📊 Configuration Flowchart
 
 ```
 ┌─────────────────────────────────────┐
-│ 1. 编译                             │
+│ 1. Build                            │
 │    npm install && npm run build     │
 └──────────────┬──────────────────────┘
                ↓
 ┌─────────────────────────────────────┐
-│ 2. 打开浏览器调试                   │
+│ 2. Open browser debugging           │
 │    ./start-chrome-debug.sh          │
 └──────────────┬──────────────────────┘
                ↓
 ┌─────────────────────────────────────┐
-│ 3. 登录各大网站（不含 DeepSeek）     │
-│    (千问、Kimi 等，DeepSeek 在第 5 步)│
+│ 3. Log in to platforms (Excl. DeepS)│
+│    (Qwen, Kimi, etc., DeepSeek 5)   │
 └──────────────┬──────────────────────┘
                ↓
 ┌─────────────────────────────────────┐
-│ 4. 配置 onboard                     │
+│ 4. Configure onboard                │
 │    ./onboard.sh webauth             │
 └──────────────┬──────────────────────┘
                ↓
 ┌─────────────────────────────────────┐
-│ 5. 登录 DeepSeek                    │
-│    (Chrome 登录 + onboard 捕获)     │
+│ 5. Log in to DeepSeek               │
+│    (Chrome login + onboard capture) │
 └──────────────┬──────────────────────┘
                ↓
 ┌─────────────────────────────────────┐
-│ 6. 启动 server                      │
+│ 6. Start server                     │
 │    ./server.sh start                │
 └──────────────┬──────────────────────┘
                ↓
 ┌─────────────────────────────────────┐
-│ 打开 Web UI → http://127.0.0.1:3001 │
-│ 输入 /models → 测试对话             │
+│ Open Web UI → http://127.0.0.1:3001 │
+│ Type /models → Test conversation    │
 └─────────────────────────────────────┘
 ```
 
 ---
 
-## 🔧 故障排查
+## 🔧 Troubleshooting
 
-### 问题 1：端口冲突
+### Issue 1: Port Conflict
 
-**症状**：Gateway 启动失败，提示端口被占用
+**Symptoms**: Gateway failed to start, port is already in use
 
-**解决**：
+**Solution**:
 
 ```bash
-# 查找占用 3001 端口的进程
+# Find the process occupying port 3001
 lsof -i :3001
 
-# 关闭进程
+# Kill the process
 kill <PID>
 
-# 或者强制关闭
+# Or forcefully stop
 ./server.sh stop
 ```
 
-### 问题 2：Chrome 调试浏览器未启动
+### Issue 2: Chrome Debug Browser Not Started
 
-**症状**：onboard 提示无法连接浏览器
+**Symptoms**: onboard prompts unable to connect to browser
 
-**解决**：
+**Solution**:
 
 ```bash
-# 检查 Chrome 是否运行
+# Check if Chrome is running
 ps aux | grep "chrome.*9222"
 
-# 重新启动
+# Restart it
 ./start-chrome-debug.sh
 ```
 
-### 问题 3：认证失败
+### Issue 3: Authentication Failed
 
-**症状**：测试对话时提示认证错误
+**Symptoms**: Auth error prompted during test conversation
 
-**解决**：
+**Solution**:
 
-1. 确保在 Chrome 调试浏览器中已登录
-2. 重新运行 `./onboard.sh webauth` 配置认证
-3. 检查 cookie 是否正确
+1. Ensure you have already logged in via the Chrome debug browser.
+2. Run `./onboard.sh webauth` again to configure authentication.
+3. Check if your cookies are valid.
 
-### 问题 4：模型列表为空
+### Issue 4: Model List is Empty
 
-**症状**：`/models` 命令没有显示模型
+**Symptoms**: `/models` command shows no models
 
-**解决**：
+**Solution**:
 
 ```bash
-# 重启 Gateway
+# Restart Gateway
 ./server.sh restart
 
-# 检查配置文件
+# Check config file
 cat .openclaw-zero-state/openclaw.json | jq '.models.providers | keys'
 
-# 查看日志
+# Tail logs
 tail -f /tmp/openclaw-zero-gateway.log
 ```
 
-### 问题 5：glm-intl-web 认证或 API 错误
+### Issue 5: glm-intl-web Authentication or API Error
 
-**症状**：`glm-intl-web` 返回 `Authentication expired`、`API 500/401` 等错误。
+**Symptoms**: `glm-intl-web` returns errors like `Authentication expired` or `API 500/401`.
 
-**说明**：
+**Explanation**:
 
-- 国际版 `https://chat.z.ai/` 的请求链路与 `glm-web(chatglm.cn)` 不同，接口可能随前端版本变化。
-- 当前实现已切换为优先复用浏览器页面（UI 驱动）以提高稳定性。
+- The request chain for the international version `https://chat.z.ai/` differs from `glm-web(chatglm.cn)`, and endpoints may change along with frontend updates.
+- The current implementation has been switched to prioritize reusing the browser page (UI driven) to improve stability.
 
-**排查建议**：
+**Troubleshooting Advice**:
 
 ```bash
-# 1) 确保调试浏览器与登录状态
+# 1) Ensure the debug browser is running and logged in
 ./start-chrome-debug.sh
 
-# 2) 重新授权 glm-intl-web
+# 2) Re-authorize glm-intl-web
 ./onboard.sh webauth
 
-# 3) 使用抓包脚本分析真实请求（脚本已迁移到 test/）
+# 3) Use packet capture scripts to analyze actual requests (scripts moved to test/)
 node test/fix-glm-intl-api.js
 ```
 
 ---
 
-## 📝 快速命令参考
+## 📝 Quick Command Reference
 
 ```bash
-# 首次使用：安装依赖并编译
+# First time use: install dependencies and build
 npm install
 npm run build
 
-# 关闭系统 Gateway
+# Stop system Gateway
 openclaw gateway stop
 
-# 启动 Chrome 调试
+# Start Chrome debugging
 ./start-chrome-debug.sh
 
-# 配置认证
+# Configure auth
 ./onboard.sh webauth
 
-# 启动本地 Gateway
+# Start local Gateway
 ./server.sh start
 
-# 查看状态
+# View status
 ./server.sh status
 
-# 重启 Gateway
+# Restart Gateway
 ./server.sh restart
 
-# 停止 Gateway
+# Stop Gateway
 ./server.sh stop
 
-# 查看日志
+# Tail logs
 tail -f /tmp/openclaw-zero-gateway.log
 
-# 检查配置
+# Check config
 cat .openclaw-zero-state/openclaw.json | jq '.models.providers | keys'
 
-# 检查认证
+# Check auth profiles
 cat .openclaw-zero-state/agents/main/agent/auth-profiles.json | jq '.profiles | keys'
 ```
 
 ---
 
-## 🧪 调试脚本位置
+## 🧪 Debug Scripts Location
 
-根目录下的 GLM 调试脚本已统一迁移到 `test/`：
+The GLM debugging scripts specifically reside globally in `test/`:
 
-- `test/fix-glm-intl-api.js`：自动发送测试消息并抓取请求/响应
-- `test/debug-glm-intl-api.js`：持续监听 intl API 请求
-- `test/debug-glm-requests.js`：拦截并打印 POST 请求
-- `test/capture-glm-api.js`：CDP/Fetch 级抓包
-- `test/quick-debug-glm.js`：快速连通性调试
-- `test/direct-capture.js`：WebSocket 直连抓包
-
----
-
-## ✅ 测试完成标志
-
-- ✅ 所有 10 个平台都能在 `/models` 中看到
-- ✅ 每个平台都能成功发送消息并收到回复
-- ✅ 流式响应正常工作（逐字显示）
-- ✅ 没有认证错误或 API 错误
+- `test/fix-glm-intl-api.js`: Auto-send test messages and capture requests/responses
+- `test/debug-glm-intl-api.js`: Continuously listen to intl API requests
+- `test/debug-glm-requests.js`: Intercept and print POST requests
+- `test/capture-glm-api.js`: CDP/Fetch level debugging
+- `test/quick-debug-glm.js`: Quick connectivity testing
+- `test/direct-capture.js`: WebSocket direct connection capture
 
 ---
 
-祝测试顺利！🚀
+## ✅ Criteria For Completion
+
+- ✅ All 10 platforms are visible in `/models`
+- ✅ Each platform successfully sends a message and receives a reply
+- ✅ Streamed responses work properly (shown word-by-word)
+- ✅ No authentication errors or API errors
+
+---
+
+Happy testing! 🚀
